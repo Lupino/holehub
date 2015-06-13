@@ -5,46 +5,78 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/mholt/binding"
+	e "github.com/pjebs/jsonerror"
 	"github.com/tylerb/graceful"
+	"github.com/unrolled/render"
 	"github.com/xyproto/permissions2"
 	"net/http"
 	"time"
 )
 
-type UserForm struct {
+var ErrorMessages = map[int]map[string]string{
+	0: e.New(0, "", "Success").Render(),
+	1: e.New(1, "User is already exists.", "Please try a new one.").Render(),
+	2: e.New(2, "Email is already exists.", "Please try a new one or reset the password.").Render(),
+}
+
+type NewUserForm struct {
 	Name     string
 	Email    string
 	Password string
 }
 
-func (uf *UserForm) FieldMap() binding.FieldMap {
+func (uf *NewUserForm) FieldMap() binding.FieldMap {
 	return binding.FieldMap{
-		&uf.Name:     "username",
-		&uf.Email:    "email",
-		&uf.Password: "password",
+		&uf.Name: binding.Field{
+			Form:     "username",
+			Required: true,
+		},
+		&uf.Email: binding.Field{
+			Form:     "email",
+			Required: true,
+		},
+		&uf.Password: binding.Field{
+			Form:     "password",
+			Required: true,
+		},
 	}
 }
 
 func main() {
 	router := mux.NewRouter()
 
+	r := render.New()
+
 	// New permissions middleware
 	perm := permissions.New()
 
 	// Get the userstate, used in the handlers below
-	// userstate := perm.UserState()
+	userstate := perm.UserState()
+
+	creator := userstate.Creator()
+	emails, _ := creator.NewKeyValue("emails")
 
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Hello HoleHub.")
 	})
 
 	router.HandleFunc("/api/users/", func(w http.ResponseWriter, req *http.Request) {
-		userForm := new(UserForm)
+		userForm := new(NewUserForm)
 		errs := binding.Bind(req, userForm)
 		if errs.Handle(w) {
 			return
 		}
-		fmt.Fprintf(w, "register>> userName: %s, method: %s\n", userForm.Name, req.Method)
+		if userstate.HasUser(userForm.Name) {
+			r.JSON(w, http.StatusOK, ErrorMessages[1])
+			return
+		}
+		if name, _ := emails.Get(userForm.Email); name != "" {
+			r.JSON(w, http.StatusOK, ErrorMessages[2])
+			return
+		}
+		userstate.AddUser(userForm.Name, userForm.Password, userForm.Email)
+		emails.Set(userForm.Email, userForm.Name)
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
 	// Custom handler for when permissions are denied
