@@ -10,6 +10,7 @@ import (
 	"github.com/unrolled/render"
 	"github.com/xyproto/permissions2"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -17,7 +18,10 @@ var ErrorMessages = map[int]map[string]string{
 	0: e.New(0, "", "Success").Render(),
 	1: e.New(1, "User is already exists.", "Please try a new one.").Render(),
 	2: e.New(2, "Email is already exists.", "Please try a new one or reset the password.").Render(),
+	3: e.New(3, "Email format error", "Please type a valid email.").Render(),
 }
+
+var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
 
 type NewUserForm struct {
 	Name     string
@@ -40,6 +44,10 @@ func (uf *NewUserForm) FieldMap() binding.FieldMap {
 			Required: true,
 		},
 	}
+}
+
+func isEmail(email string) bool {
+	return reEmail.MatchString(email)
 }
 
 func main() {
@@ -72,6 +80,10 @@ func main() {
 		}
 		if name, _ := emails.Get(userForm.Email); name != "" {
 			r.JSON(w, http.StatusOK, ErrorMessages[2])
+			return
+		}
+		if !isEmail(userForm.Email) {
+			r.JSON(w, http.StatusOK, ErrorMessages[3])
 			return
 		}
 		userstate.AddUser(userForm.Name, userForm.Password, userForm.Email)
