@@ -110,7 +110,7 @@ func main() {
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
-	router.HandleFunc("/api/auth/", func(w http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/api/signin/", func(w http.ResponseWriter, req *http.Request) {
 		authForm := new(AuthForm)
 		errs := binding.Bind(req, authForm)
 		if errs.Handle(w) {
