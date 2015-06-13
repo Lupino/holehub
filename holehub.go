@@ -25,14 +25,6 @@ func (uf *UserForm) FieldMap() binding.FieldMap {
 	}
 }
 
-func checkMethod(w http.ResponseWriter, req *http.Request, method string) bool {
-	if req.Method != method {
-		http.Error(w, "404 page not found.", http.StatusNotFound)
-		return false
-	}
-	return true
-}
-
 func main() {
 	router := mux.NewRouter()
 
@@ -47,16 +39,13 @@ func main() {
 	})
 
 	router.HandleFunc("/api/users/", func(w http.ResponseWriter, req *http.Request) {
-		if !checkMethod(w, req, "POST") {
-			return
-		}
 		userForm := new(UserForm)
 		errs := binding.Bind(req, userForm)
 		if errs.Handle(w) {
 			return
 		}
 		fmt.Fprintf(w, "register>> userName: %s, method: %s\n", userForm.Name, req.Method)
-	})
+	}).Methods("POST")
 
 	// Custom handler for when permissions are denied
 	perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
