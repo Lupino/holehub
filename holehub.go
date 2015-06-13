@@ -19,6 +19,7 @@ var ErrorMessages = map[int]map[string]string{
 	1: e.New(1, "User is already exists.", "Please try a new one.").Render(),
 	2: e.New(2, "Email is already exists.", "Please try a new one or reset the password.").Render(),
 	3: e.New(3, "Email format error", "Please type a valid email.").Render(),
+	4: e.New(4, "User name or password invalid.", "").Render(),
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
@@ -40,6 +41,24 @@ func (uf *NewUserForm) FieldMap() binding.FieldMap {
 			Required: true,
 		},
 		&uf.Password: binding.Field{
+			Form:     "password",
+			Required: true,
+		},
+	}
+}
+
+type AuthForm struct {
+	NameOrEmail string
+	Password    string
+}
+
+func (af *AuthForm) FieldMap() binding.FieldMap {
+	return binding.FieldMap{
+		&af.NameOrEmail: binding.Field{
+			Form:     "username",
+			Required: true,
+		},
+		&af.Password: binding.Field{
 			Form:     "password",
 			Required: true,
 		},
@@ -88,6 +107,24 @@ func main() {
 		}
 		userstate.AddUser(userForm.Name, userForm.Password, userForm.Email)
 		emails.Set(userForm.Email, userForm.Name)
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
+
+	router.HandleFunc("/api/auth/", func(w http.ResponseWriter, req *http.Request) {
+		authForm := new(AuthForm)
+		errs := binding.Bind(req, authForm)
+		if errs.Handle(w) {
+			return
+		}
+		name := authForm.NameOrEmail
+		if isEmail(authForm.NameOrEmail) {
+			name, _ = emails.Get(authForm.NameOrEmail)
+		}
+		if !userstate.CorrectPassword(name, authForm.Password) {
+			r.JSON(w, http.StatusOK, ErrorMessages[4])
+			return
+		}
+		userstate.Login(w, name)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
