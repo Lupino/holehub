@@ -1,37 +1,37 @@
 package main
 
 import (
-  "github.com/codegangsta/negroni"
-  "github.com/tylerb/graceful"
-  "github.com/xyproto/permissions2"
-  "net/http"
-  "fmt"
-  "time"
+	"fmt"
+	"github.com/codegangsta/negroni"
+	"github.com/tylerb/graceful"
+	"github.com/xyproto/permissions2"
+	"net/http"
+	"time"
 )
 
 func main() {
-  mux := http.NewServeMux()
+	mux := http.NewServeMux()
 
-  // New permissions middleware
-  perm := permissions.New()
+	// New permissions middleware
+	perm := permissions.New()
 
-  // Get the userstate, used in the handlers below
-  // userstate := perm.UserState()
+	// Get the userstate, used in the handlers below
+	// userstate := perm.UserState()
 
-  mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    fmt.Fprintf(w, "Hello HoleHub.")
-  })
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(w, "Hello HoleHub.")
+	})
 
-   // Custom handler for when permissions are denied
-   perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
-     http.Error(w, "Permission denied!", http.StatusForbidden)
-   })
+	// Custom handler for when permissions are denied
+	perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
+		http.Error(w, "Permission denied!", http.StatusForbidden)
+	})
 
-  n := negroni.Classic()
+	n := negroni.Classic()
 
-  n.Use(perm)
-  n.UseHandler(mux)
+	n.Use(perm)
+	n.UseHandler(mux)
 
-  //n.Run(":3000")
-  graceful.Run(":3000", 10*time.Second, n)
+	//n.Run(":3000")
+	graceful.Run(":3000", 10*time.Second, n)
 }
