@@ -87,7 +87,7 @@ func main() {
 		fmt.Fprintf(w, "Hello HoleHub.")
 	})
 
-	router.HandleFunc("/api/users/", func(w http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/api/signup/", func(w http.ResponseWriter, req *http.Request) {
 		userForm := new(NewUserForm)
 		errs := binding.Bind(req, userForm)
 		if errs.Handle(w) {
