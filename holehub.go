@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/codegangsta/negroni"
+	"github.com/gorilla/mux"
 	"github.com/mholt/binding"
 	"github.com/tylerb/graceful"
 	"github.com/xyproto/permissions2"
@@ -33,7 +34,7 @@ func checkMethod(w http.ResponseWriter, req *http.Request, method string) bool {
 }
 
 func main() {
-	mux := http.NewServeMux()
+	router := mux.NewRouter()
 
 	// New permissions middleware
 	perm := permissions.New()
@@ -41,11 +42,11 @@ func main() {
 	// Get the userstate, used in the handlers below
 	// userstate := perm.UserState()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Hello HoleHub.")
 	})
 
-	mux.HandleFunc("/api/users/", func(w http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/api/users/", func(w http.ResponseWriter, req *http.Request) {
 		if !checkMethod(w, req, "POST") {
 			return
 		}
@@ -65,7 +66,7 @@ func main() {
 	n := negroni.Classic()
 
 	n.Use(perm)
-	n.UseHandler(mux)
+	n.UseHandler(router)
 
 	//n.Run(":3000")
 	graceful.Run(":3000", 10*time.Second, n)
