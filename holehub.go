@@ -122,6 +122,46 @@ func GenerateUserCa(username string) {
 	ioutil.WriteFile(priv_f, priv_b, 0777)
 }
 
+func GenerateUserCert(username string) {
+	caFile := defaultCaPath + username + "-ca.pem"
+	privFile := defaultCaPath + username + "-ca.key"
+
+	ca_b, _ := ioutil.ReadFile(caFile)
+	ca, _ := x509.ParseCertificate(ca_b)
+	priv_b, _ := ioutil.ReadFile(privFile)
+	priv, _ := x509.ParsePKCS1PrivateKey(priv_b)
+
+	cert2 := &x509.Certificate{
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			Country:            []string{"China"},
+			Organization:       []string{"HoleHUB"},
+			OrganizationalUnit: []string{"HoleHUB"},
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+	priv2, _ := rsa.GenerateKey(rand.Reader, 1024)
+	pub2 := &priv2.PublicKey
+	cert2_b, err2 := x509.CreateCertificate(rand.Reader, cert2, ca, pub2, priv)
+	if err2 != nil {
+		log.Println("create cert2 failed", err2)
+		return
+	}
+
+	cert2_f := defaultCaPath + username + "-cert.pem"
+	log.Println("write to", cert2_f)
+	ioutil.WriteFile(cert2_f, cert2_b, 0777)
+
+	priv2_f := defaultCaPath + username + "cert.key"
+	priv2_b := x509.MarshalPKCS1PrivateKey(priv2)
+	log.Println("write to", priv2_f)
+	ioutil.WriteFile(priv2_f, priv2_b, 0777)
+}
+
 type HoleServer struct {
 	ID    string
 	Addr  string
@@ -264,6 +304,7 @@ func main() {
 
 	perm.AddUserPath("/api/holes/")
 	perm.AddUserPath("/api/new_ca/")
+	perm.AddUserPath("/api/new_cert/")
 
 	// Get the userstate, used in the handlers below
 	userstate := perm.UserState()
@@ -297,11 +338,16 @@ func main() {
 		userstate.AddUser(userForm.Name, userForm.Password, userForm.Email)
 		emails.Set(userForm.Email, userForm.Name)
 		GenerateUserCa(userForm.Name)
+		GenerateUserCert(userForm.Name)
 		users := userstate.Users()
 		ca := userForm.Name + "-ca.pem"
 		cakey := userForm.Name + "-ca.key"
+		cert := userForm.Name + "-cert.pem"
+		certkey := userForm.Name + "-cert.key"
 		users.Set(userForm.Name, "ca", ca)
 		users.Set(userForm.Name, "cakey", cakey)
+		users.Set(userForm.Name, "cert", cert)
+		users.Set(userForm.Name, "certkey", certkey)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
@@ -356,6 +402,12 @@ func main() {
 	router.HandleFunc("/api/new_ca/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
 		GenerateUserCa(username)
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
+
+	router.HandleFunc("/api/new_cert/", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		GenerateUserCert(username)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
