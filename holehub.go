@@ -1,6 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -11,6 +15,9 @@ import (
 	"github.com/unrolled/render"
 	"github.com/xyproto/permissions2"
 	"github.com/xyproto/pinterface"
+	"io/ioutil"
+	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"os/exec"
@@ -24,6 +31,7 @@ const HOLE_SERVER = "hole-server"
 
 var defaultMinPort = 10000
 var defaultHost = "127.0.0.1"
+var defaultCaPath = "certs/"
 
 var ErrorMessages = map[int]map[string]string{
 	0: e.New(0, "", "Success").Render(),
@@ -80,6 +88,40 @@ func isEmail(email string) bool {
 	return reEmail.MatchString(email)
 }
 
+func GenerateUserCa(username string) {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(1653),
+		Subject: pkix.Name{
+			Country:            []string{"China"},
+			Organization:       []string{"HoleHUB"},
+			OrganizationalUnit: []string{"HoleHUB"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		SubjectKeyId:          []byte{1, 2, 3, 4, 5},
+		BasicConstraintsValid: true,
+		IsCA:        true,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	priv, _ := rsa.GenerateKey(rand.Reader, 1024)
+	pub := &priv.PublicKey
+	ca_b, err := x509.CreateCertificate(rand.Reader, ca, ca, pub, priv)
+	if err != nil {
+		log.Println("create ca failed", err)
+		return
+	}
+	ca_f := defaultCaPath + username + "-ca.pem"
+	log.Println("write to", ca_f)
+	ioutil.WriteFile(ca_f, ca_b, 0777)
+
+	priv_f := defaultCaPath + username + "-ca.key"
+	priv_b := x509.MarshalPKCS1PrivateKey(priv)
+	log.Println("write to", priv_f)
+	ioutil.WriteFile(priv_f, priv_b, 0777)
+}
+
 type HoleServer struct {
 	ID    string
 	Addr  string
@@ -98,7 +140,7 @@ func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
 }
 
 func (h *HoleServer) Start() error {
-	h.Cmd = exec.Command(HOLE_SERVER, "-addr", h.Addr, "-use-tls", "-ca", h.Ca, "-key", h.Cakey)
+	h.Cmd = exec.Command(HOLE_SERVER, "-addr", h.Addr, "-use-tls", "-ca", defaultCaPath+h.Ca, "-key", defaultCaPath+h.Cakey)
 	h.Cmd.Stdout = os.Stdout
 	h.Cmd.Stderr = os.Stderr
 	return h.Cmd.Start()
@@ -146,8 +188,6 @@ func (h *UsersHole) NewHoleServer(username string) *HoleServer {
 	cakey := username + "-ca.key"
 	addr := "tcp://" + defaultHost + ":" + port
 	holeID := uuid.NewV4().String()
-	users.Set(username, "ca", ca)
-	users.Set(username, "cakey", cakey)
 	h.holes.Set(holeID, "ca", ca)
 	h.holes.Set(holeID, "cakey", cakey)
 	h.holes.Set(holeID, "addr", addr)
@@ -255,6 +295,12 @@ func main() {
 		}
 		userstate.AddUser(userForm.Name, userForm.Password, userForm.Email)
 		emails.Set(userForm.Email, userForm.Name)
+		GenerateUserCa(userForm.Name)
+		users := userstate.Users()
+		ca := userForm.Name + "-ca.pem"
+		cakey := userForm.Name + "-ca.key"
+		users.Set(userForm.Name, "ca", ca)
+		users.Set(userForm.Name, "cakey", cakey)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
