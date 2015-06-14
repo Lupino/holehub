@@ -274,6 +274,36 @@ func main() {
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
+	router.HandleFunc("/api/holes/create/", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		hs := usershole.NewHoleServer(username)
+		out := ErrorMessages[0]
+		out["ID"] = hs.ID
+		r.JSON(w, http.StatusOK, out)
+	}).Methods("POST")
+
+	router.HandleFunc("/api/holes/{holeID}/start/", func(w http.ResponseWriter, req *http.Request) {
+		holeID := mux.Vars(req)["holeID"]
+		username := userstate.Username(req)
+		hs := usershole.GetOne(username, holeID)
+		hs.Start()
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
+
+	router.HandleFunc("/api/holes/{holeID}/kill/", func(w http.ResponseWriter, req *http.Request) {
+		holeID := mux.Vars(req)["holeID"]
+		username := userstate.Username(req)
+		hs := usershole.GetOne(username, holeID)
+		hs.Kill()
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
+
+	router.HandleFunc("/api/holes/", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		holes := usershole.GetAll(username)
+		r.JSON(w, http.StatusOK, map[string][]*HoleServer{"holes": holes})
+	}).Methods("GET")
+
 	// Custom handler for when permissions are denied
 	perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Permission denied!", http.StatusForbidden)
