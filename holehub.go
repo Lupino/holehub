@@ -305,6 +305,10 @@ func main() {
 	perm.AddUserPath("/api/holes/")
 	perm.AddUserPath("/api/new_ca/")
 	perm.AddUserPath("/api/new_cert/")
+	perm.AddUserPath("/api/ca.pem")
+	perm.AddUserPath("/api/ca.key")
+	perm.AddUserPath("/api/cert.pem")
+	perm.AddUserPath("/api/cert.key")
 
 	// Get the userstate, used in the handlers below
 	userstate := perm.UserState()
@@ -405,11 +409,35 @@ func main() {
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
+	router.HandleFunc("/api/ca.pem", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		data, _ := ioutil.ReadFile(username + "-ca.pem")
+		r.Data(w, http.StatusOK, data)
+	}).Methods("GET")
+
+	router.HandleFunc("/api/ca.key", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		data, _ := ioutil.ReadFile(username + "-ca.key")
+		r.Data(w, http.StatusOK, data)
+	}).Methods("GET")
+
 	router.HandleFunc("/api/new_cert/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
 		GenerateUserCert(username)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
+
+	router.HandleFunc("/api/cert.pem", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		data, _ := ioutil.ReadFile(username + "-cert.pem")
+		r.Data(w, http.StatusOK, data)
+	}).Methods("GET")
+
+	router.HandleFunc("/api/cert.key", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		data, _ := ioutil.ReadFile(username + "-cert.key")
+		r.Data(w, http.StatusOK, data)
+	}).Methods("GET")
 
 	// Custom handler for when permissions are denied
 	perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
