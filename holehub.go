@@ -222,6 +222,8 @@ func main() {
 	// New permissions middleware
 	perm := permissions.New()
 
+	perm.AddUserPath("/api/holes/")
+
 	// Get the userstate, used in the handlers below
 	userstate := perm.UserState()
 
