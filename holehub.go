@@ -263,6 +263,7 @@ func main() {
 	perm := permissions.New()
 
 	perm.AddUserPath("/api/holes/")
+	perm.AddUserPath("/api/new_ca/")
 
 	// Get the userstate, used in the handlers below
 	userstate := perm.UserState()
@@ -351,6 +352,12 @@ func main() {
 		holes := usershole.GetAll(username)
 		r.JSON(w, http.StatusOK, map[string][]*HoleServer{"holes": holes})
 	}).Methods("GET")
+
+	router.HandleFunc("/api/new_ca/", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		GenerateUserCa(username)
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
 
 	// Custom handler for when permissions are denied
 	perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
