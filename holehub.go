@@ -156,7 +156,7 @@ func GenerateUserCert(username string) {
 	log.Println("write to", cert2_f)
 	ioutil.WriteFile(cert2_f, cert2_b, 0777)
 
-	priv2_f := defaultCaPath + username + "cert.key"
+	priv2_f := defaultCaPath + username + "-cert.key"
 	priv2_b := x509.MarshalPKCS1PrivateKey(priv2)
 	log.Println("write to", priv2_f)
 	ioutil.WriteFile(priv2_f, priv2_b, 0777)
