@@ -9,10 +9,19 @@ import (
 	"github.com/tylerb/graceful"
 	"github.com/unrolled/render"
 	"github.com/xyproto/permissions2"
+	"github.com/xyproto/pinterface"
 	"net/http"
+	"os"
+	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 )
+
+const HOLE_SERVER = "hole-server"
+
+var defaultMinPort = 10000
 
 var ErrorMessages = map[int]map[string]string{
 	0: e.New(0, "", "Success").Render(),
@@ -67,6 +76,116 @@ func (af *AuthForm) FieldMap() binding.FieldMap {
 
 func isEmail(email string) bool {
 	return reEmail.MatchString(email)
+}
+
+type HoleServer struct {
+	addr  string
+	ca    string
+	cakey string
+	cmd   *exec.Cmd
+}
+
+func NewHoleServer(addr, ca, cakey string) *HoleServer {
+	return &HoleServer{
+		addr:  addr,
+		ca:    ca,
+		cakey: cakey,
+	}
+}
+
+func (h *HoleServer) Run() error {
+	h.cmd = exec.Command(HOLE_SERVER, "-addr", h.addr, "-use-tls", "-ca", h.ca, "-key", h.cakey)
+	h.cmd.Stdout = os.Stdout
+	h.cmd.Stderr = os.Stderr
+	return h.cmd.Run()
+
+}
+
+func (h *HoleServer) Kill() error {
+	if h.cmd != nil && h.cmd.Process != nil {
+		return h.cmd.Process.Kill()
+	}
+	return nil
+}
+
+func (h *HoleServer) Exited() bool {
+	if h.cmd != nil && h.cmd.ProcessState != nil {
+		return h.cmd.ProcessState.Exited()
+	}
+	return true
+}
+
+type UsersHoleServer struct {
+	state   pinterface.IUserState
+	holes   pinterface.IHashMap
+	seq     pinterface.IKeyValue
+	servers map[string]*HoleServer
+}
+
+func NewUsersHoleServer(state pinterface.IUserState) *UsersHoleServer {
+	uhs := new(UsersHoleServer)
+	creator := state.Creator()
+	uhs.state = state
+	uhs.holes, _ = creator.NewHashMap("holes")
+	uhs.seq, _ = creator.NewKeyValue("seq")
+	uhs.servers = make(map[string]*HoleServer)
+	return uhs
+}
+
+func (h *UsersHoleServer) New(username string) *HoleServer {
+	if !h.state.HasUser(username) {
+		return nil
+	}
+	users := h.state.Users()
+	port := strconv.Itoa(h.GetLastPort())
+	ca := username + "-ca.pem"
+	cakey := username + "-ca.key"
+	addr := "tcp://:" + port
+	users.Set(username, "ca", ca)
+	users.Set(username, "cakey", cakey)
+	h.holes.Set(port, "ca", ca)
+	h.holes.Set(port, "cakey", cakey)
+	h.holes.Set(port, "addr", addr)
+	userholes, _ := users.Get(username, "holes")
+	users.Set(username, "holes", userholes+port+",")
+	hs := NewHoleServer(addr, ca, cakey)
+	h.servers[port] = hs
+	return hs
+}
+
+func (h *UsersHoleServer) GetAll(username string) []*HoleServer {
+	if !h.state.HasUser(username) {
+		return nil
+	}
+	users := h.state.Users()
+	userholes, _ := users.Get(username, "holes")
+	ports := strings.Split(userholes, ",")
+	servers := make([]*HoleServer, 0)
+	var ok bool
+	var server *HoleServer
+	for _, port := range ports {
+		if port == "" {
+			continue
+		}
+		if server, ok = h.servers[port]; !ok {
+			addr, _ := h.holes.Get(port, "addr")
+			ca, _ := h.holes.Get(port, "ca")
+			cakey, _ := h.holes.Get(port, "cakey")
+			server = NewHoleServer(addr, ca, cakey)
+		}
+		servers = append(servers, server)
+	}
+	return servers
+}
+
+func (h *UsersHoleServer) GetLastPort() int {
+	lastport, _ := h.seq.Inc("holeserverport")
+	port, _ := strconv.Atoi(lastport)
+	if port < defaultMinPort {
+		port = defaultMinPort
+		h.seq.Set("holeserverport", strconv.Itoa(port))
+	}
+	return port
 }
 
 func main() {
