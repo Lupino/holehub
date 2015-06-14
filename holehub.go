@@ -167,7 +167,7 @@ type HoleServer struct {
 	Addr  string
 	Ca    string
 	Cakey string
-	Cmd   *exec.Cmd
+	Cmd   *exec.Cmd `json:"-"`
 }
 
 func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
