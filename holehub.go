@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"flag"
 	"fmt"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -32,6 +33,7 @@ const HOLE_SERVER = "hole-server"
 var defaultMinPort = 10000
 var defaultHost = "127.0.0.1"
 var defaultCaPath = "certs/"
+var port = 3000
 
 var ErrorMessages = map[int]map[string]string{
 	0: e.New(0, "", "Success").Render(),
@@ -294,6 +296,14 @@ func (h *UsersHole) GetLastPort() int {
 	return port
 }
 
+func init() {
+	flag.StringVar(&defaultHost, "host", "127.0.0.1", "The server host.")
+	flag.IntVar(&port, "port", 3000, "The server port.")
+	flag.StringVar(&defaultCaPath, "cert-path", "certs/", "The Certificate path.")
+	flag.IntVar(&defaultMinPort, "min-port", 10000, "The min hole server port.")
+	flag.Parse()
+}
+
 func main() {
 	router := mux.NewRouter()
 
@@ -450,5 +460,5 @@ func main() {
 	n.UseHandler(router)
 
 	//n.Run(":3000")
-	graceful.Run(":3000", 10*time.Second, n)
+	graceful.Run(fmt.Sprintf("%s:%d", defaultHost, port), 10*time.Second, n)
 }
