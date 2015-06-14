@@ -172,6 +172,7 @@ func (h *UsersHoleServer) GetAll(username string) []*HoleServer {
 			ca, _ := h.holes.Get(port, "ca")
 			cakey, _ := h.holes.Get(port, "cakey")
 			server = NewHoleServer(addr, ca, cakey)
+			h.servers[port] = server
 		}
 		servers = append(servers, server)
 	}
