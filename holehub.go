@@ -51,7 +51,7 @@ const runsitConfig = `{
   "env": {
     "WANT_USER": ["_env", "want-${USER}"]
   },
-  "binary": "hole-server",
+  "binary": "{{.Command}}",
   "args": [
     "--addr", "{{.Addr}}",
     "--ca", "{{.Ca}}",
@@ -188,15 +188,18 @@ type HoleServer struct {
 	Ca      string
 	Cakey   string
 	IsAlive bool
+	Command string
 }
 
 func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
+	gopath := os.Getenv("GOPATH")
 	hs := &HoleServer{
-		ID:    ID,
-		Addr:  addr,
-		Ca:    ca,
-		Cakey: cakey,
-		Cwd:   configPath + "certs",
+		ID:      ID,
+		Addr:    addr,
+		Ca:      ca,
+		Cakey:   cakey,
+		Cwd:     configPath + "certs",
+		Command: gopath + "/bin/hole-server",
 	}
 	hs.IsAlive = hs.Alive()
 	return hs
