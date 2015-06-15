@@ -429,6 +429,13 @@ func main() {
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
+	router.HandleFunc("/api/holes/{holeID}/", func(w http.ResponseWriter, req *http.Request) {
+		holeID := mux.Vars(req)["holeID"]
+		username := userstate.Username(req)
+		hs := usershole.GetOne(username, holeID)
+		r.JSON(w, http.StatusOK, hs)
+	}).Methods("GET")
+
 	router.HandleFunc("/api/holes/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
 		holes := usershole.GetAll(username)
