@@ -32,7 +32,7 @@ const HOLE_SERVER = "hole-server"
 
 var defaultMinPort = 10000
 var defaultHost = "127.0.0.1"
-var defaultCaPath = "config/certs/"
+var configPath = "config/"
 var port = 3000
 
 var ErrorMessages = map[int]map[string]string{
@@ -114,19 +114,19 @@ func GenerateUserCa(username string) {
 		log.Println("create ca failed", err)
 		return
 	}
-	ca_f := defaultCaPath + username + "-ca.pem"
+	ca_f := configPath + "certs/" + username + "-ca.pem"
 	log.Println("write to", ca_f)
 	ioutil.WriteFile(ca_f, ca_b, 0777)
 
-	priv_f := defaultCaPath + username + "-ca.key"
+	priv_f := configPath + "certs/" + username + "-ca.key"
 	priv_b := x509.MarshalPKCS1PrivateKey(priv)
 	log.Println("write to", priv_f)
 	ioutil.WriteFile(priv_f, priv_b, 0777)
 }
 
 func GenerateUserCert(username string) {
-	caFile := defaultCaPath + username + "-ca.pem"
-	privFile := defaultCaPath + username + "-ca.key"
+	caFile := configPath + "certs/" + username + "-ca.pem"
+	privFile := configPath + "certs/" + username + "-ca.key"
 
 	ca_b, _ := ioutil.ReadFile(caFile)
 	ca, _ := x509.ParseCertificate(ca_b)
@@ -154,11 +154,11 @@ func GenerateUserCert(username string) {
 		return
 	}
 
-	cert2_f := defaultCaPath + username + "-cert.pem"
+	cert2_f := configPath + "certs/" + username + "-cert.pem"
 	log.Println("write to", cert2_f)
 	ioutil.WriteFile(cert2_f, cert2_b, 0777)
 
-	priv2_f := defaultCaPath + username + "-cert.key"
+	priv2_f := configPath + "certs/" + username + "-cert.key"
 	priv2_b := x509.MarshalPKCS1PrivateKey(priv2)
 	log.Println("write to", priv2_f)
 	ioutil.WriteFile(priv2_f, priv2_b, 0777)
@@ -182,11 +182,10 @@ func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
 }
 
 func (h *HoleServer) Start() error {
-	h.Cmd = exec.Command(HOLE_SERVER, "-addr", h.Addr, "-use-tls", "-ca", defaultCaPath+h.Ca, "-key", defaultCaPath+h.Cakey)
+	h.Cmd = exec.Command(HOLE_SERVER, "-addr", h.Addr, "-use-tls", "-ca", configPath+"certs/"+h.Ca, "-key", configPath+"certs/"+h.Cakey)
 	h.Cmd.Stdout = os.Stdout
 	h.Cmd.Stderr = os.Stderr
 	return h.Cmd.Start()
-
 }
 
 func (h *HoleServer) Kill() error {
@@ -299,7 +298,7 @@ func (h *UsersHole) GetLastPort() int {
 func init() {
 	flag.StringVar(&defaultHost, "host", "127.0.0.1", "The server host.")
 	flag.IntVar(&port, "port", 3000, "The server port.")
-	flag.StringVar(&defaultCaPath, "cert-path", "certs/", "The Certificate path.")
+	flag.StringVar(&configPath, "config_dir", "config/", "The config path.")
 	flag.IntVar(&defaultMinPort, "min-port", 10000, "The min hole server port.")
 	flag.Parse()
 }
