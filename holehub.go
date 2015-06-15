@@ -21,10 +21,10 @@ import (
 	"math/big"
 	"net/http"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -44,6 +44,23 @@ var ErrorMessages = map[int]map[string]string{
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
+
+const runsitConfig = `{
+  "cwd": "{{.Cwd}}",
+  "standardEnv": true,
+  "env": {
+    "WANT_USER": ["_env", "want-${USER}"]
+  },
+  "binary": "hole-server",
+  "args": [
+    "--addr", "{{.Addr}}",
+    "--ca", "{{.Ca}}",
+    "--key", "{{.Cakey}}",
+    "--use-tls"
+  ]
+}`
+
+var tpl = template.Must(template.New("runsit").Parse(runsitConfig))
 
 type NewUserForm struct {
 	Name     string
@@ -165,41 +182,47 @@ func GenerateUserCert(username string) {
 }
 
 type HoleServer struct {
-	ID    string
-	Addr  string
-	Ca    string
-	Cakey string
-	Cmd   *exec.Cmd `json:"-"`
+	ID      string
+	Cwd     string
+	Addr    string
+	Ca      string
+	Cakey   string
+	IsAlive bool
 }
 
 func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
-	return &HoleServer{
+	hs := &HoleServer{
 		ID:    ID,
 		Addr:  addr,
 		Ca:    ca,
 		Cakey: cakey,
+		Cwd:   configPath + "certs",
 	}
+	hs.IsAlive = hs.Alive()
+	return hs
 }
 
 func (h *HoleServer) Start() error {
-	h.Cmd = exec.Command(HOLE_SERVER, "-addr", h.Addr, "-use-tls", "-ca", configPath+"certs/"+h.Ca, "-key", configPath+"certs/"+h.Cakey)
-	h.Cmd.Stdout = os.Stdout
-	h.Cmd.Stderr = os.Stderr
-	return h.Cmd.Start()
+	fp, err := os.Create(configPath + h.ID + ".json")
+	if err != nil {
+		return err
+	}
+	err = tpl.Execute(fp, h)
+	h.IsAlive = true
+	return err
 }
 
 func (h *HoleServer) Kill() error {
-	if h.Cmd != nil && h.Cmd.Process != nil {
-		return h.Cmd.Process.Kill()
-	}
-	return nil
+	h.IsAlive = false
+	return os.Remove(configPath + h.ID + ".json")
 }
 
-func (h *HoleServer) Exited() bool {
-	if h.Cmd != nil && h.Cmd.ProcessState != nil {
-		return h.Cmd.ProcessState.Exited()
+func (h *HoleServer) Alive() bool {
+	_, err := os.Stat(configPath + h.ID + ".json")
+	if err == nil || os.IsExist(err) {
+		return true
 	}
-	return true
+	return false
 }
 
 type UsersHole struct {
