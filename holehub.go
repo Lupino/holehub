@@ -30,10 +30,11 @@ import (
 
 const HOLE_SERVER = "hole-server"
 
-var defaultMinPort = 10000
-var defaultHost = "127.0.0.1"
-var configPath = "config/"
-var port = 3000
+var defaultMinPort int
+var defaultHost string
+var configPath string
+var port int
+var command string
 
 var ErrorMessages = map[int]map[string]string{
 	0: e.New(0, "", "Success").Render(),
@@ -192,14 +193,13 @@ type HoleServer struct {
 }
 
 func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
-	gopath := os.Getenv("GOPATH")
 	hs := &HoleServer{
 		ID:      ID,
 		Addr:    addr,
 		Ca:      ca,
 		Cakey:   cakey,
 		Cwd:     configPath + "certs",
-		Command: gopath + "/bin/hole-server",
+		Command: command,
 	}
 	hs.IsAlive = hs.Alive()
 	return hs
@@ -326,6 +326,8 @@ func init() {
 	flag.IntVar(&port, "port", 3000, "The server port.")
 	flag.StringVar(&configPath, "config_dir", "config/", "The config path.")
 	flag.IntVar(&defaultMinPort, "min-port", 10000, "The min hole server port.")
+	gopath := os.Getenv("GOPATH")
+	flag.StringVar(&command, "cmd", gopath+"/bin/hole-server", "The hole server binary path.")
 	flag.Parse()
 }
 
