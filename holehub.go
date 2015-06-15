@@ -32,7 +32,7 @@ const HOLE_SERVER = "hole-server"
 
 var defaultMinPort = 10000
 var defaultHost = "127.0.0.1"
-var defaultCaPath = "certs/"
+var defaultCaPath = "config/certs/"
 var port = 3000
 
 var ErrorMessages = map[int]map[string]string{
