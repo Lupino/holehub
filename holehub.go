@@ -12,6 +12,7 @@ import (
 	"github.com/mholt/binding"
 	e "github.com/pjebs/jsonerror"
 	"github.com/satori/go.uuid"
+	"github.com/sendgrid/sendgrid-go"
 	"github.com/tylerb/graceful"
 	"github.com/unrolled/render"
 	"github.com/xyproto/permissions2"
@@ -35,6 +36,7 @@ var defaultHost string
 var configPath string
 var port int
 var command string
+var sg *sendgrid.SGClient
 
 var ErrorMessages = map[int]map[string]string{
 	0: e.New(0, "", "Success").Render(),
@@ -42,6 +44,7 @@ var ErrorMessages = map[int]map[string]string{
 	2: e.New(2, "Email is already exists.", "Please try a new one or reset the password.").Render(),
 	3: e.New(3, "Email format error", "Please type a valid email.").Render(),
 	4: e.New(4, "User name or password invalid.", "").Render(),
+	5: e.New(5, "User is confimd or ConfirmationCode is expired.", "Resend a new confirmation code?").Render(),
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
@@ -180,6 +183,23 @@ func GenerateUserCert(username string) {
 	priv2_b := x509.MarshalPKCS1PrivateKey(priv2)
 	log.Println("write to", priv2_f)
 	ioutil.WriteFile(priv2_f, priv2_b, 0777)
+}
+
+func SendConfirmationCode(username, email, confirmationCode string) bool {
+	message := sendgrid.NewMail()
+	message.AddTo(email)
+	message.AddToName(username)
+	message.SetSubject("欢迎注册 HoleHUB")
+	message.SetText("Hi，欢迎加入HoleHUB！\n\n在这里您可以方便地穿透路由器。\n\n为了保障该帐号可以正常使用，请于24小时内点击以下链接验证您的账号:\nhttp://holehub.com/api/confirm/" + confirmationCode)
+	message.SetFrom("support@holehub.com")
+	message.SetFromName("HoleHUB Support")
+	if r := sg.Send(message); r == nil {
+		fmt.Println("Email sent!")
+		return true
+	} else {
+		fmt.Println(r)
+		return false
+	}
 }
 
 type HoleServer struct {
@@ -326,9 +346,12 @@ func init() {
 	flag.IntVar(&port, "port", 3000, "The server port.")
 	flag.StringVar(&configPath, "config_dir", "config/", "The config path.")
 	flag.IntVar(&defaultMinPort, "min-port", 10000, "The min hole server port.")
+	var sgUser = flag.String("sendgrid_user", "", "The SendGrid username.")
+	var sgKey = flag.String("sendgrid_key", "", "The SendGrid password.")
 	gopath := os.Getenv("GOPATH")
 	flag.StringVar(&command, "cmd", gopath+"/bin/hole-server", "The hole server binary path.")
 	flag.Parse()
+	sg = sendgrid.NewSendGridClient(*sgUser, *sgKey)
 }
 
 func main() {
@@ -389,6 +412,11 @@ func main() {
 		users.Set(userForm.Name, "cakey", cakey)
 		users.Set(userForm.Name, "cert", cert)
 		users.Set(userForm.Name, "certkey", certkey)
+
+		code, _ := userstate.GenerateUniqueConfirmationCode()
+		userstate.AddUnconfirmed(userForm.Name, code)
+		SendConfirmationCode(userForm.Name, userForm.Email, code)
+
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
@@ -482,6 +510,29 @@ func main() {
 		data, _ := ioutil.ReadFile(username + "-cert.key")
 		r.Data(w, http.StatusOK, data)
 	}).Methods("GET")
+
+	router.HandleFunc("/api/confirm/{confirmationCode}", func(w http.ResponseWriter, req *http.Request) {
+		code := mux.Vars(req)["confirmationCode"]
+		if err := userstate.ConfirmUserByConfirmationCode(code); err != nil {
+			r.JSON(w, http.StatusOK, ErrorMessages[5])
+			return
+		}
+		msg := ErrorMessages[0]
+		r.JSON(w, http.StatusOK, msg)
+	}).Methods("GET")
+
+	router.HandleFunc("/api/resend/confirmationcode", func(w http.ResponseWriter, req *http.Request) {
+		req.ParseForm()
+		email := req.Form.Get("email")
+		username, _ := emails.Get(email)
+
+		code, _ := userstate.GenerateUniqueConfirmationCode()
+		userstate.AddUnconfirmed(username, code)
+
+		SendConfirmationCode(username, email, code)
+		msg := ErrorMessages[0]
+		r.JSON(w, http.StatusOK, msg)
+	}).Methods("POST")
 
 	// Custom handler for when permissions are denied
 	perm.SetDenyFunction(func(w http.ResponseWriter, req *http.Request) {
