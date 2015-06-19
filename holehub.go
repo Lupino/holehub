@@ -45,6 +45,7 @@ var ErrorMessages = map[int]map[string]string{
 	3: e.New(3, "Email format error", "Please type a valid email.").Render(),
 	4: e.New(4, "User name or password invalid.", "").Render(),
 	5: e.New(5, "User is confimd or ConfirmationCode is expired.", "Resend a new confirmation code?").Render(),
+	6: e.New(6, "User is confimd.", "No need resend twice.").Render(),
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
@@ -525,6 +526,11 @@ func main() {
 		req.ParseForm()
 		email := req.Form.Get("email")
 		username, _ := emails.Get(email)
+
+		if userstate.IsConfirmed(username) {
+			r.JSON(w, http.StatusOK, ErrorMessages[6])
+			return
+		}
 
 		code, _ := userstate.GenerateUniqueConfirmationCode()
 		userstate.AddUnconfirmed(username, code)
