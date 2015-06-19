@@ -345,7 +345,7 @@ func init() {
 	flag.StringVar(&defaultHost, "host", "127.0.0.1", "The server host.")
 	flag.IntVar(&port, "port", 3000, "The server port.")
 	flag.StringVar(&configPath, "config_dir", "config/", "The config path.")
-	flag.IntVar(&defaultMinPort, "min-port", 10000, "The min hole server port.")
+	flag.IntVar(&defaultMinPort, "min_port", 10000, "The min hole server port.")
 	var sgUser = flag.String("sendgrid_user", "", "The SendGrid username.")
 	var sgKey = flag.String("sendgrid_key", "", "The SendGrid password.")
 	gopath := os.Getenv("GOPATH")
