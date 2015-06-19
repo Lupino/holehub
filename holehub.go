@@ -47,6 +47,7 @@ var ErrorMessages = map[int]map[string]string{
 	5: e.New(5, "User is confimd or ConfirmationCode is expired.", "Resend a new confirmation code?").Render(),
 	6: e.New(6, "User is confimd.", "No need resend twice.").Render(),
 	7: e.New(7, "User NotFound.", "").Render(),
+	8: e.New(8, "Old password is not correct.", "").Render(),
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
@@ -104,6 +105,24 @@ func (af *AuthForm) FieldMap() binding.FieldMap {
 		},
 		&af.Password: binding.Field{
 			Form:     "password",
+			Required: true,
+		},
+	}
+}
+
+type ResetPasswordForm struct {
+	OldPassword string
+	NewPassword string
+}
+
+func (rpf *ResetPasswordForm) FieldMap() binding.FieldMap {
+	return binding.FieldMap{
+		&rpf.OldPassword: binding.Field{
+			Form:     "old_password",
+			Required: true,
+		},
+		&rpf.NewPassword: binding.Field{
+			Form:     "new_password",
 			Required: true,
 		},
 	}
@@ -544,6 +563,23 @@ func main() {
 		SendConfirmationCode(username, email, code)
 		msg := ErrorMessages[0]
 		r.JSON(w, http.StatusOK, msg)
+	}).Methods("POST")
+
+	router.HandleFunc("/api/reset_password/", func(w http.ResponseWriter, req *http.Request) {
+		username := userstate.Username(req)
+		resetPasswordForm := new(ResetPasswordForm)
+		errs := binding.Bind(req, resetPasswordForm)
+		if errs.Handle(w) {
+			return
+		}
+		if !userstate.CorrectPassword(username, resetPasswordForm.OldPassword) {
+			r.JSON(w, http.StatusOK, ErrorMessages[8])
+			return
+		}
+		users := userstate.Users()
+		passwordHash := userstate.HashPassword(username, resetPasswordForm.NewPassword)
+		users.Set(username, "password", passwordHash)
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
 	// Custom handler for when permissions are denied
