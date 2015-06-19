@@ -230,6 +230,23 @@ func SendConfirmationCode(username, email, confirmationCode string) bool {
 	}
 }
 
+func SendPasswordToken(username, email, token string) bool {
+	message := sendgrid.NewMail()
+	message.AddTo(email)
+	message.AddToName(username)
+	message.SetSubject("HoleHUB 重置密码")
+	message.SetText("如果非本人操作请忽略此邮件。\n\n请在 12 小时内完成重置密码:\nhttp://holehub.com/reset_password/?token=" + token)
+	message.SetFrom("support@holehub.com")
+	message.SetFromName("HoleHUB Support")
+	if r := sg.Send(message); r == nil {
+		fmt.Println("Email sent!")
+		return true
+	} else {
+		fmt.Println(r)
+		return false
+	}
+}
+
 type HoleServer struct {
 	ID      string
 	Cwd     string
@@ -594,8 +611,8 @@ func main() {
 				r.JSON(w, http.StatusOK, ErrorMessages[9])
 				return
 			}
-			current := time.Now().Unix()
-			expiredAt, _ = strconv.Atoi(token["expiredAt"])
+			current := int(time.Now().Unix())
+			expiredAt, _ := strconv.Atoi(token["expiredAt"])
 			if expiredAt < current {
 				r.JSON(w, http.StatusOK, ErrorMessages[9])
 				return
@@ -612,6 +629,38 @@ func main() {
 		passwordHash := userstate.HashPassword(username, resetPasswordForm.NewPassword)
 		users.Set(username, "password", passwordHash)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
+
+	router.HandleFunc("/api/send/passwordToken", func(w http.ResponseWriter, req *http.Request) {
+		req.ParseForm()
+		username := req.Form.Get("username")
+		if !userstate.HasUser(username) {
+			r.JSON(w, http.StatusOK, ErrorMessages[7])
+			return
+		}
+
+		loop := 0
+		var code string
+		for {
+			code, _ := userstate.GenerateUniqueConfirmationCode()
+			tokenStr, _ := passwordTokens.Get(code)
+			if tokenStr == "" {
+				break
+			}
+			loop = loop + 1
+			if loop > 1000 {
+				http.Error(w, "Too many loops...", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		email, _ := userstate.Email(username)
+		expiredAt := time.Now().Add(12 * time.Hour).Unix()
+		passwordTokens.Set(code, fmt.Sprintf("{\"username\": \"%s\", \"expiredAt\": \"%d\"}", username, expiredAt))
+
+		SendPasswordToken(username, email, code)
+		msg := ErrorMessages[0]
+		r.JSON(w, http.StatusOK, msg)
 	}).Methods("POST")
 
 	// Custom handler for when permissions are denied
