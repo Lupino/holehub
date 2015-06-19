@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/codegangsta/negroni"
@@ -48,6 +49,7 @@ var ErrorMessages = map[int]map[string]string{
 	6: e.New(6, "User is confimd.", "No need resend twice.").Render(),
 	7: e.New(7, "User NotFound.", "").Render(),
 	8: e.New(8, "Old password is not correct.", "").Render(),
+	9: e.New(9, "PasswordToken is expired.", "").Render(),
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
@@ -111,15 +113,20 @@ func (af *AuthForm) FieldMap() binding.FieldMap {
 }
 
 type ResetPasswordForm struct {
+	Token       string
 	OldPassword string
 	NewPassword string
 }
 
 func (rpf *ResetPasswordForm) FieldMap() binding.FieldMap {
 	return binding.FieldMap{
+		&rpf.Token: binding.Field{
+			Form:     "token",
+			Required: false,
+		},
 		&rpf.OldPassword: binding.Field{
 			Form:     "old_password",
-			Required: true,
+			Required: false,
 		},
 		&rpf.NewPassword: binding.Field{
 			Form:     "new_password",
@@ -396,6 +403,7 @@ func main() {
 
 	creator := userstate.Creator()
 	emails, _ := creator.NewKeyValue("emails")
+	passwordTokens, _ := creator.NewKeyValue("password_tokens")
 	usershole := NewUsersHole(userstate)
 
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -566,15 +574,39 @@ func main() {
 	}).Methods("POST")
 
 	router.HandleFunc("/api/reset_password/", func(w http.ResponseWriter, req *http.Request) {
-		username := userstate.Username(req)
 		resetPasswordForm := new(ResetPasswordForm)
 		errs := binding.Bind(req, resetPasswordForm)
 		if errs.Handle(w) {
 			return
 		}
-		if !userstate.CorrectPassword(username, resetPasswordForm.OldPassword) {
-			r.JSON(w, http.StatusOK, ErrorMessages[8])
-			return
+		var username string
+		if userstate.UserRights(req) {
+			username = userstate.Username(req)
+			if !userstate.CorrectPassword(username, resetPasswordForm.OldPassword) {
+				r.JSON(w, http.StatusOK, ErrorMessages[8])
+				return
+			}
+		} else if resetPasswordForm.Token != "" {
+			tokenStr, _ := passwordTokens.Get(resetPasswordForm.Token)
+			passwordTokens.Del(resetPasswordForm.Token)
+			var token map[string]string
+			if err := json.Unmarshal([]byte(tokenStr), &token); err != nil {
+				r.JSON(w, http.StatusOK, ErrorMessages[9])
+				return
+			}
+			current := time.Now().Unix()
+			expiredAt, _ = strconv.Atoi(token["expiredAt"])
+			if expiredAt < current {
+				r.JSON(w, http.StatusOK, ErrorMessages[9])
+				return
+			}
+			username = token["username"]
+			if !userstate.HasUser(username) {
+				r.JSON(w, http.StatusOK, ErrorMessages[7])
+				return
+			}
+		} else {
+			http.Error(w, "Permission denied!", http.StatusForbidden)
 		}
 		users := userstate.Users()
 		passwordHash := userstate.HashPassword(username, resetPasswordForm.NewPassword)
