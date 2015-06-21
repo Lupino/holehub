@@ -37,7 +37,6 @@ var defaultHost string
 var configPath string
 var tplFile = "config.tpl"
 var port int
-var command string
 var sg *sendgrid.SGClient
 
 var ErrorMessages = map[int]map[string]string{
@@ -238,7 +237,6 @@ type HoleServer struct {
 	Ca      string
 	Cakey   string
 	IsAlive bool
-	Command string
 }
 
 func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
@@ -248,7 +246,6 @@ func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
 		Ca:      ca,
 		Cakey:   cakey,
 		Cwd:     configPath + "certs",
-		Command: command,
 	}
 	hs.IsAlive = hs.Alive()
 	return hs
@@ -378,8 +375,6 @@ func init() {
 	flag.IntVar(&defaultMinPort, "min_port", 10000, "The min hole server port.")
 	var sgUser = flag.String("sendgrid_user", "", "The SendGrid username.")
 	var sgKey = flag.String("sendgrid_key", "", "The SendGrid password.")
-	gopath := os.Getenv("GOPATH")
-	flag.StringVar(&command, "cmd", gopath+"/bin/hole-server", "The hole server binary path.")
 	flag.Parse()
 	sg = sendgrid.NewSendGridClient(*sgUser, *sgKey)
 }
