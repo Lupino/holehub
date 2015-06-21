@@ -1,7 +1,7 @@
 {
   "cwd": "config",
   "standardEnv": true,
-  "binary": "lauch_hole_server",
+  "binary": "lanch_hole_server",
   "args": [
     "--addr", "{{.Addr}}",
     "--ca", "certs/{{.Ca}}",
