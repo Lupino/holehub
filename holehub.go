@@ -35,6 +35,7 @@ const HOLE_SERVER = "hole-server"
 var defaultMinPort int
 var defaultHost string
 var configPath string
+var tplFile = "config.tpl"
 var port int
 var command string
 var sg *sendgrid.SGClient
@@ -53,23 +54,6 @@ var ErrorMessages = map[int]map[string]string{
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
-
-const runsitConfig = `{
-  "cwd": "{{.Cwd}}",
-  "standardEnv": true,
-  "env": {
-    "WANT_USER": ["_env", "want-${USER}"]
-  },
-  "binary": "{{.Command}}",
-  "args": [
-    "--addr", "{{.Addr}}",
-    "--ca", "{{.Ca}}",
-    "--key", "{{.Cakey}}",
-    "--use-tls"
-  ]
-}`
-
-var tpl = template.Must(template.New("runsit").Parse(runsitConfig))
 
 type NewUserForm struct {
 	Name     string
@@ -275,6 +259,7 @@ func (h *HoleServer) Start() error {
 	if err != nil {
 		return err
 	}
+	var tpl = template.Must(template.ParseFiles(configPath + tplFile))
 	err = tpl.Execute(fp, h)
 	h.IsAlive = true
 	return err
