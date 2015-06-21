@@ -232,7 +232,6 @@ func SendPasswordToken(username, email, token string) bool {
 
 type HoleServer struct {
 	ID      string
-	Cwd     string
 	Addr    string
 	Ca      string
 	Cakey   string
@@ -245,7 +244,6 @@ func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
 		Addr:    addr,
 		Ca:      ca,
 		Cakey:   cakey,
-		Cwd:     configPath + "certs",
 	}
 	hs.IsAlive = hs.Alive()
 	return hs

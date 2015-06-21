@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+export GOPATH=${GOPATH:-/tmp/gopath}
+
+export HOLE_SERVER=${GOPATH}/bin/hole-server
+
+if [ ! -f ${HOLE_SERVER} ]; then
+    go get github.com/Lupino/hole/cmd/hole-server
+fi
+
+${HOLE_SERVER} $@

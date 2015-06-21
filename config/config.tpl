@@ -1,14 +1,11 @@
 {
-  "cwd": "{{.Cwd}}",
+  "cwd": "config",
   "standardEnv": true,
-  "env": {
-    "WANT_USER": ["_env", "want-${USER}"]
-  },
-  "binary": "{{.Command}}",
+  "binary": "lauch_hole_server",
   "args": [
     "--addr", "{{.Addr}}",
-    "--ca", "{{.Ca}}",
-    "--key", "{{.Cakey}}",
+    "--ca", "certs/{{.Ca}}",
+    "--key", "certs/{{.Cakey}}",
     "--use-tls"
   ]
 }
