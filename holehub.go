@@ -30,8 +30,6 @@ import (
 	"time"
 )
 
-const HOLE_SERVER = "hole-server"
-
 var defaultMinPort int
 var defaultHost string
 var configPath string
@@ -230,7 +228,7 @@ func SendPasswordToken(username, email, token string) bool {
 	}
 }
 
-type HoleServer struct {
+type Holed struct {
 	ID      string
 	Addr    string
 	Ca      string
@@ -238,8 +236,8 @@ type HoleServer struct {
 	IsAlive bool
 }
 
-func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
-	hs := &HoleServer{
+func NewHoled(ID, addr, ca, cakey string) *Holed {
+	hs := &Holed{
 		ID:      ID,
 		Addr:    addr,
 		Ca:      ca,
@@ -249,7 +247,7 @@ func NewHoleServer(ID, addr, ca, cakey string) *HoleServer {
 	return hs
 }
 
-func (h *HoleServer) Start() error {
+func (h *Holed) Start() error {
 	fp, err := os.Create(configPath + h.ID + ".json")
 	if err != nil {
 		return err
@@ -260,12 +258,12 @@ func (h *HoleServer) Start() error {
 	return err
 }
 
-func (h *HoleServer) Kill() error {
+func (h *Holed) Kill() error {
 	h.IsAlive = false
 	return os.Remove(configPath + h.ID + ".json")
 }
 
-func (h *HoleServer) Alive() bool {
+func (h *Holed) Alive() bool {
 	_, err := os.Stat(configPath + h.ID + ".json")
 	if err == nil || os.IsExist(err) {
 		return true
@@ -277,7 +275,7 @@ type UsersHole struct {
 	state   pinterface.IUserState
 	holes   pinterface.IHashMap
 	seq     pinterface.IKeyValue
-	servers map[string]*HoleServer
+	servers map[string]*Holed
 }
 
 func NewUsersHole(state pinterface.IUserState) *UsersHole {
@@ -286,11 +284,11 @@ func NewUsersHole(state pinterface.IUserState) *UsersHole {
 	uh.state = state
 	uh.holes, _ = creator.NewHashMap("holes")
 	uh.seq, _ = creator.NewKeyValue("seq")
-	uh.servers = make(map[string]*HoleServer)
+	uh.servers = make(map[string]*Holed)
 	return uh
 }
 
-func (h *UsersHole) NewHoleServer(username string) *HoleServer {
+func (h *UsersHole) NewHoled(username string) *Holed {
 	if !h.state.HasUser(username) {
 		return nil
 	}
@@ -305,21 +303,21 @@ func (h *UsersHole) NewHoleServer(username string) *HoleServer {
 	h.holes.Set(holeID, "addr", addr)
 	userholes, _ := users.Get(username, "holes")
 	users.Set(username, "holes", userholes+holeID+",")
-	hs := NewHoleServer(holeID, addr, ca, cakey)
+	hs := NewHoled(holeID, addr, ca, cakey)
 	h.servers[holeID] = hs
 	return hs
 }
 
-func (h *UsersHole) GetAll(username string) []*HoleServer {
+func (h *UsersHole) GetAll(username string) []*Holed {
 	if !h.state.HasUser(username) {
 		return nil
 	}
 	users := h.state.Users()
 	userholes, _ := users.Get(username, "holes")
 	holeIDs := strings.Split(userholes, ",")
-	servers := make([]*HoleServer, 0)
+	servers := make([]*Holed, 0)
 	var ok bool
-	var server *HoleServer
+	var server *Holed
 	for _, holeID := range holeIDs {
 		if holeID == "" {
 			continue
@@ -328,7 +326,7 @@ func (h *UsersHole) GetAll(username string) []*HoleServer {
 			addr, _ := h.holes.Get(holeID, "addr")
 			ca, _ := h.holes.Get(holeID, "ca")
 			cakey, _ := h.holes.Get(holeID, "cakey")
-			server = NewHoleServer(holeID, addr, ca, cakey)
+			server = NewHoled(holeID, addr, ca, cakey)
 			h.servers[holeID] = server
 		}
 		servers = append(servers, server)
@@ -336,7 +334,7 @@ func (h *UsersHole) GetAll(username string) []*HoleServer {
 	return servers
 }
 
-func (h *UsersHole) GetOne(username, holeID string) *HoleServer {
+func (h *UsersHole) GetOne(username, holeID string) *Holed {
 	if !h.state.HasUser(username) {
 		return nil
 	}
@@ -350,7 +348,7 @@ func (h *UsersHole) GetOne(username, holeID string) *HoleServer {
 		addr, _ := h.holes.Get(holeID, "addr")
 		ca, _ := h.holes.Get(holeID, "ca")
 		cakey, _ := h.holes.Get(holeID, "cakey")
-		hs = NewHoleServer(holeID, addr, ca, cakey)
+		hs = NewHoled(holeID, addr, ca, cakey)
 		h.servers[holeID] = hs
 	}
 	return hs
@@ -464,7 +462,7 @@ func main() {
 
 	router.HandleFunc("/api/holes/create/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		hs := usershole.NewHoleServer(username)
+		hs := usershole.NewHoled(username)
 		out := ErrorMessages[0]
 		out["ID"] = hs.ID
 		r.JSON(w, http.StatusOK, out)
@@ -496,7 +494,7 @@ func main() {
 	router.HandleFunc("/api/holes/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
 		holes := usershole.GetAll(username)
-		r.JSON(w, http.StatusOK, map[string][]*HoleServer{"holes": holes})
+		r.JSON(w, http.StatusOK, map[string][]*Holed{"holes": holes})
 	}).Methods("GET")
 
 	router.HandleFunc("/api/new_ca/", func(w http.ResponseWriter, req *http.Request) {
