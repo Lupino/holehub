@@ -230,18 +230,22 @@ func SendPasswordToken(username, email, token string) bool {
 
 type HoleApp struct {
 	ID      string
-	Addr    string
-	Ca      string
-	Cakey   string
-	IsAlive bool
+	Name    string
+	Scheme  string
+	Port    string
+	Ca      string `json:"-"`
+	Cakey   string `json:"-"`
+	IsAlive bool   `json:"Alive"`
 }
 
-func NewHoleApp(ID, addr, ca, cakey string) *HoleApp {
+func NewHoleApp(ID, name, scheme, port, ca, cakey string) *HoleApp {
 	hs := &HoleApp{
-		ID:    ID,
-		Addr:  addr,
-		Ca:    ca,
-		Cakey: cakey,
+		ID:     ID,
+		Name:   name,
+		Scheme: scheme,
+		Port:   port,
+		Ca:     ca,
+		Cakey:  cakey,
 	}
 	hs.IsAlive = hs.Alive()
 	return hs
@@ -288,7 +292,7 @@ func NewUsersHole(state pinterface.IUserState) *UsersHole {
 	return uh
 }
 
-func (h *UsersHole) NewHoleApp(username string) *HoleApp {
+func (h *UsersHole) NewHoleApp(username, holeName, scheme string) *HoleApp {
 	if !h.state.HasUser(username) {
 		return nil
 	}
@@ -296,14 +300,20 @@ func (h *UsersHole) NewHoleApp(username string) *HoleApp {
 	port := strconv.Itoa(h.GetLastPort())
 	ca := username + "-ca.pem"
 	cakey := username + "-ca.key"
-	addr := "tcp://" + host + ":" + port
 	holeID := uuid.NewV4().String()
+	h.holes.Set(holeID, "name", holeName)
 	h.holes.Set(holeID, "ca", ca)
 	h.holes.Set(holeID, "cakey", cakey)
-	h.holes.Set(holeID, "addr", addr)
+
+	if scheme == "" {
+		scheme = "tcp"
+	}
+
+	h.holes.Set(holeID, "scheme", scheme)
+	h.holes.Set(holeID, "port", port)
 	userholes, _ := users.Get(username, "holes")
 	users.Set(username, "holes", userholes+holeID+",")
-	hs := NewHoleApp(holeID, addr, ca, cakey)
+	hs := NewHoleApp(holeID, holeName, scheme, port, ca, cakey)
 	h.servers[holeID] = hs
 	return hs
 }
@@ -323,10 +333,12 @@ func (h *UsersHole) GetAll(username string) []*HoleApp {
 			continue
 		}
 		if server, ok = h.servers[holeID]; !ok {
-			addr, _ := h.holes.Get(holeID, "addr")
+			port, _ := h.holes.Get(holeID, "port")
+			holeName, _ := h.holes.Get(holeID, "name")
+			scheme, _ := h.holes.Get(holeID, "scheme")
 			ca, _ := h.holes.Get(holeID, "ca")
 			cakey, _ := h.holes.Get(holeID, "cakey")
-			server = NewHoleApp(holeID, addr, ca, cakey)
+			server := NewHoleApp(holeID, holeName, scheme, port, ca, cakey)
 			h.servers[holeID] = server
 		}
 		servers = append(servers, server)
@@ -345,10 +357,12 @@ func (h *UsersHole) GetOne(username, holeID string) *HoleApp {
 	}
 	hs, ok := h.servers[holeID]
 	if !ok {
-		addr, _ := h.holes.Get(holeID, "addr")
+		port, _ := h.holes.Get(holeID, "port")
+		holeName, _ := h.holes.Get(holeID, "name")
+		scheme, _ := h.holes.Get(holeID, "scheme")
 		ca, _ := h.holes.Get(holeID, "ca")
 		cakey, _ := h.holes.Get(holeID, "cakey")
-		hs = NewHoleApp(holeID, addr, ca, cakey)
+		hs := NewHoleApp(holeID, holeName, scheme, port, ca, cakey)
 		h.servers[holeID] = hs
 	}
 	return hs
@@ -462,7 +476,11 @@ func main() {
 
 	router.HandleFunc("/api/holes/create/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		hs := usershole.NewHoleApp(username)
+		req.ParseForm()
+		scheme := req.Form.Get("scheme")
+		holeName := req.Form.Get("name")
+
+		hs := usershole.NewHoleApp(username, holeName, scheme)
 		out := ErrorMessages[0]
 		out["ID"] = hs.ID
 		r.JSON(w, http.StatusOK, out)
