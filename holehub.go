@@ -228,7 +228,7 @@ func SendPasswordToken(username, email, token string) bool {
 	}
 }
 
-type Holed struct {
+type HoleApp struct {
 	ID      string
 	Addr    string
 	Ca      string
@@ -236,8 +236,8 @@ type Holed struct {
 	IsAlive bool
 }
 
-func NewHoled(ID, addr, ca, cakey string) *Holed {
-	hs := &Holed{
+func NewHoleApp(ID, addr, ca, cakey string) *HoleApp {
+	hs := &HoleApp{
 		ID:    ID,
 		Addr:  addr,
 		Ca:    ca,
@@ -247,7 +247,7 @@ func NewHoled(ID, addr, ca, cakey string) *Holed {
 	return hs
 }
 
-func (h *Holed) Start() error {
+func (h *HoleApp) Start() error {
 	fp, err := os.Create(configPath + h.ID + ".json")
 	if err != nil {
 		return err
@@ -258,12 +258,12 @@ func (h *Holed) Start() error {
 	return err
 }
 
-func (h *Holed) Kill() error {
+func (h *HoleApp) Kill() error {
 	h.IsAlive = false
 	return os.Remove(configPath + h.ID + ".json")
 }
 
-func (h *Holed) Alive() bool {
+func (h *HoleApp) Alive() bool {
 	_, err := os.Stat(configPath + h.ID + ".json")
 	if err == nil || os.IsExist(err) {
 		return true
@@ -275,7 +275,7 @@ type UsersHole struct {
 	state   pinterface.IUserState
 	holes   pinterface.IHashMap
 	seq     pinterface.IKeyValue
-	servers map[string]*Holed
+	servers map[string]*HoleApp
 }
 
 func NewUsersHole(state pinterface.IUserState) *UsersHole {
@@ -284,11 +284,11 @@ func NewUsersHole(state pinterface.IUserState) *UsersHole {
 	uh.state = state
 	uh.holes, _ = creator.NewHashMap("holes")
 	uh.seq, _ = creator.NewKeyValue("seq")
-	uh.servers = make(map[string]*Holed)
+	uh.servers = make(map[string]*HoleApp)
 	return uh
 }
 
-func (h *UsersHole) NewHoled(username string) *Holed {
+func (h *UsersHole) NewHoleApp(username string) *HoleApp {
 	if !h.state.HasUser(username) {
 		return nil
 	}
@@ -303,21 +303,21 @@ func (h *UsersHole) NewHoled(username string) *Holed {
 	h.holes.Set(holeID, "addr", addr)
 	userholes, _ := users.Get(username, "holes")
 	users.Set(username, "holes", userholes+holeID+",")
-	hs := NewHoled(holeID, addr, ca, cakey)
+	hs := NewHoleApp(holeID, addr, ca, cakey)
 	h.servers[holeID] = hs
 	return hs
 }
 
-func (h *UsersHole) GetAll(username string) []*Holed {
+func (h *UsersHole) GetAll(username string) []*HoleApp {
 	if !h.state.HasUser(username) {
 		return nil
 	}
 	users := h.state.Users()
 	userholes, _ := users.Get(username, "holes")
 	holeIDs := strings.Split(userholes, ",")
-	servers := make([]*Holed, 0)
+	servers := make([]*HoleApp, 0)
 	var ok bool
-	var server *Holed
+	var server *HoleApp
 	for _, holeID := range holeIDs {
 		if holeID == "" {
 			continue
@@ -326,7 +326,7 @@ func (h *UsersHole) GetAll(username string) []*Holed {
 			addr, _ := h.holes.Get(holeID, "addr")
 			ca, _ := h.holes.Get(holeID, "ca")
 			cakey, _ := h.holes.Get(holeID, "cakey")
-			server = NewHoled(holeID, addr, ca, cakey)
+			server = NewHoleApp(holeID, addr, ca, cakey)
 			h.servers[holeID] = server
 		}
 		servers = append(servers, server)
@@ -334,7 +334,7 @@ func (h *UsersHole) GetAll(username string) []*Holed {
 	return servers
 }
 
-func (h *UsersHole) GetOne(username, holeID string) *Holed {
+func (h *UsersHole) GetOne(username, holeID string) *HoleApp {
 	if !h.state.HasUser(username) {
 		return nil
 	}
@@ -348,7 +348,7 @@ func (h *UsersHole) GetOne(username, holeID string) *Holed {
 		addr, _ := h.holes.Get(holeID, "addr")
 		ca, _ := h.holes.Get(holeID, "ca")
 		cakey, _ := h.holes.Get(holeID, "cakey")
-		hs = NewHoled(holeID, addr, ca, cakey)
+		hs = NewHoleApp(holeID, addr, ca, cakey)
 		h.servers[holeID] = hs
 	}
 	return hs
@@ -462,7 +462,7 @@ func main() {
 
 	router.HandleFunc("/api/holes/create/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		hs := usershole.NewHoled(username)
+		hs := usershole.NewHoleApp(username)
 		out := ErrorMessages[0]
 		out["ID"] = hs.ID
 		r.JSON(w, http.StatusOK, out)
@@ -494,7 +494,7 @@ func main() {
 	router.HandleFunc("/api/holes/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
 		holes := usershole.GetAll(username)
-		r.JSON(w, http.StatusOK, map[string][]*Holed{"holes": holes})
+		r.JSON(w, http.StatusOK, map[string][]*HoleApp{"holes": holes})
 	}).Methods("GET")
 
 	router.HandleFunc("/api/new_ca/", func(w http.ResponseWriter, req *http.Request) {
