@@ -238,10 +238,10 @@ type Holed struct {
 
 func NewHoled(ID, addr, ca, cakey string) *Holed {
 	hs := &Holed{
-		ID:      ID,
-		Addr:    addr,
-		Ca:      ca,
-		Cakey:   cakey,
+		ID:    ID,
+		Addr:  addr,
+		Ca:    ca,
+		Cakey: cakey,
 	}
 	hs.IsAlive = hs.Alive()
 	return hs
