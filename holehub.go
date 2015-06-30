@@ -30,8 +30,8 @@ import (
 	"time"
 )
 
-var defaultMinPort int
-var defaultHost string
+var minPort int
+var host string
 var configPath string
 var tplFile = "config.tpl"
 var port int
@@ -296,7 +296,7 @@ func (h *UsersHole) NewHoled(username string) *Holed {
 	port := strconv.Itoa(h.GetLastPort())
 	ca := username + "-ca.pem"
 	cakey := username + "-ca.key"
-	addr := "tcp://" + defaultHost + ":" + port
+	addr := "tcp://" + host + ":" + port
 	holeID := uuid.NewV4().String()
 	h.holes.Set(holeID, "ca", ca)
 	h.holes.Set(holeID, "cakey", cakey)
@@ -357,18 +357,18 @@ func (h *UsersHole) GetOne(username, holeID string) *Holed {
 func (h *UsersHole) GetLastPort() int {
 	lastport, _ := h.seq.Inc("holeserverport")
 	port, _ := strconv.Atoi(lastport)
-	if port < defaultMinPort {
-		port = defaultMinPort
+	if port < minPort {
+		port = minPort
 		h.seq.Set("holeserverport", strconv.Itoa(port))
 	}
 	return port
 }
 
 func init() {
-	flag.StringVar(&defaultHost, "host", "127.0.0.1", "The server host.")
+	flag.StringVar(&host, "host", "127.0.0.1", "The server host.")
 	flag.IntVar(&port, "port", 3000, "The server port.")
 	flag.StringVar(&configPath, "config_dir", "config/", "The config path.")
-	flag.IntVar(&defaultMinPort, "min_port", 10000, "The min hole server port.")
+	flag.IntVar(&minPort, "min_port", 10000, "The min hole server port.")
 	var sgUser = flag.String("sendgrid_user", "", "The SendGrid username.")
 	var sgKey = flag.String("sendgrid_key", "", "The SendGrid password.")
 	flag.Parse()
@@ -650,5 +650,5 @@ func main() {
 	n.UseHandler(router)
 
 	//n.Run(":3000")
-	graceful.Run(fmt.Sprintf("%s:%d", defaultHost, port), 10*time.Second, n)
+	graceful.Run(fmt.Sprintf("%s:%d", host, port), 10*time.Second, n)
 }
