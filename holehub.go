@@ -16,7 +16,7 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/tylerb/graceful"
 	"github.com/unrolled/render"
-	"github.com/xyproto/permissions2"
+	permissions "github.com/xyproto/permissionbolt"
 	"github.com/xyproto/pinterface"
 	"io/ioutil"
 	"log"
@@ -381,7 +381,7 @@ func main() {
 	r := render.New()
 
 	// New permissions middleware
-	perm := permissions.New()
+	perm, _ := permissions.NewWithConf(configPath + "bolt.db")
 
 	perm.AddUserPath("/api/holes/")
 	perm.AddUserPath("/api/new_ca/")
@@ -650,5 +650,6 @@ func main() {
 	n.UseHandler(router)
 
 	//n.Run(":3000")
+	fmt.Printf("HoleHUB is run on http://%s:%d\n", host, port)
 	graceful.Run(fmt.Sprintf("%s:%d", host, port), 10*time.Second, n)
 }
