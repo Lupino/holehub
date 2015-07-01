@@ -2,10 +2,10 @@
 
 export GOPATH=${GOPATH:-/tmp/gopath}
 
-export HOLE_SERVER=${GOPATH}/bin/holed
+export HOLED=${GOPATH}/bin/holed
 
-if [ ! -f ${HOLE_SERVER} ]; then
+if [ ! -f ${HOLED} ]; then
     go get github.com/Lupino/hole/cmd/holed
 fi
 
-${HOLE_SERVER} $@
+${HOLED} $@
