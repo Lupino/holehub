@@ -529,13 +529,13 @@ func main() {
 
 	router.HandleFunc("/api/ca.pem", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		data, _ := ioutil.ReadFile(username + "-ca.pem")
+		data, _ := ioutil.ReadFile(configPath + "certs/" + username + "-ca.pem")
 		r.Data(w, http.StatusOK, data)
 	}).Methods("GET")
 
 	router.HandleFunc("/api/ca.key", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		data, _ := ioutil.ReadFile(username + "-ca.key")
+		data, _ := ioutil.ReadFile(configPath + "certs/" + username + "-ca.key")
 		r.Data(w, http.StatusOK, data)
 	}).Methods("GET")
 
@@ -547,13 +547,13 @@ func main() {
 
 	router.HandleFunc("/api/cert.pem", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		data, _ := ioutil.ReadFile(username + "-cert.pem")
+		data, _ := ioutil.ReadFile(configPath + "certs/" + username + "-cert.pem")
 		r.Data(w, http.StatusOK, data)
 	}).Methods("GET")
 
 	router.HandleFunc("/api/cert.key", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
-		data, _ := ioutil.ReadFile(username + "-cert.key")
+		data, _ := ioutil.ReadFile(configPath + "certs/" + username + "-cert.key")
 		r.Data(w, http.StatusOK, data)
 	}).Methods("GET")
 
