@@ -24,7 +24,7 @@ type JE struct {
 var defaultReTryTime = 1000
 var reTryTimes = defaultReTryTime
 
-var boltFile = "/tmp/bolt.db"
+var boltFile = os.Getenv("HOME") + "/.holehub.db"
 var certFile = "/tmp/cert.pem"
 var privFile = "/tmp/cert.key"
 
