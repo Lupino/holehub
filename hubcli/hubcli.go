@@ -109,7 +109,7 @@ func main() {
 					fmt.Printf("%s\n", value)
 					return
 				case "set":
-					if len(args) != 2 {
+					if len(args) != 3 {
 						fmt.Printf("Not enough arguments.\n\n")
 						cli.ShowCommandHelp(c, "config")
 						os.Exit(1)
