@@ -474,6 +474,14 @@ func main() {
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
+	router.HandleFunc("/api/ping/", func(w http.ResponseWriter, req *http.Request) {
+		var pong = []byte("false")
+		if userstate.UserRights(req) {
+			pong = []byte("true")
+		}
+		r.Data(w, http.StatusOK, pong)
+	}).Methods("GET")
+
 	router.HandleFunc("/api/holes/create/", func(w http.ResponseWriter, req *http.Request) {
 		username := userstate.Username(req)
 		req.ParseForm()
