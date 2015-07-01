@@ -112,6 +112,19 @@ type HoleApp struct {
 	Scheme  string
 	Lscheme string
 	Lport   string
+	Status  string
+}
+
+func NewHoleApp(ID string) HoleApp {
+	var holeApp = HoleApp{ID: ID}
+	holeApp.Name, _ = holes.Get(ID, "name")
+	holeApp.Port, _ = holes.Get(ID, "port")
+	holeApp.Scheme, _ = holes.Get(ID, "scheme")
+	holeApp.Lport, _ = holes.Get(ID, "local-port")
+	holeApp.Lscheme, _ = holes.Get(ID, "local-scheme")
+	holeApp.Status, _ = holes.Get(ID, "status")
+
+	return holeApp
 }
 
 func (hole HoleApp) run(host, command string) {
@@ -145,10 +158,12 @@ func (hole HoleApp) run(host, command string) {
 
 func (hole HoleApp) Start(host string) {
 	hole.run(host, "start")
+	holes.Set(hole.ID, "status", "started")
 }
 
 func (hole HoleApp) Kill(host string) {
 	hole.run(host, "kill")
+	holes.Set(hole.ID, "status", "stoped")
 }
 
 func createHoleApp(host, scheme, name string) HoleApp {
@@ -179,6 +194,7 @@ func createHoleApp(host, scheme, name string) HoleApp {
 	holes.Set(hole.ID, "name", hole.Name)
 	holes.Set(hole.ID, "scheme", hole.Scheme)
 	holes.Set(hole.ID, "port", hole.Port)
+	holes.Set(hole.ID, "status", "stoped")
 	apps.Add(hole.ID)
 
 	return hole
@@ -248,6 +264,17 @@ func Run(host, scheme, name, port string) {
 	signal.Notify(s, os.Interrupt, os.Kill)
 	<-s
 }
+
+func ListApp(host string) {
+	holeIDs, _ := apps.GetAll()
+	var hostPort = strings.Split(host, "://")[1]
+	host = strings.Split(hostPort, ":")[0]
+	fmt.Println("ID\t\t\t\t\tName\t\tPort\t\t\t\t\tStatus")
+	for _, holeID := range holeIDs {
+		holeApp := NewHoleApp(holeID)
+		fmt.Printf("%s\t%s\t\t127.0.0.1:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
+			holeApp.Name, holeApp.Lport, holeApp.Lscheme, host, holeApp.Port, holeApp.Scheme, holeApp.Status)
+	}
 }
 
 func main() {
@@ -324,6 +351,13 @@ func main() {
 				var name = c.String("name")
 				var port = c.String("port")
 				Run(c.GlobalString("host"), scheme, name, port)
+			},
+		},
+		{
+			Name:  "ls",
+			Usage: "List HoleApps",
+			Action: func(c *cli.Context) {
+				ListApp(c.GlobalString("host"))
 			},
 		},
 	}
