@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/codegangsta/cli"
+	"github.com/xyproto/simplebolt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,9 +19,42 @@ type JE struct {
 	Message string `json:"message"`
 }
 
-var rcFile = ".hubclirc"
+var boltFile = "/tmp/bolt.db"
 
-func Login(host, name, passwd string) {
+var db *simplebolt.Database
+var config *simplebolt.KeyValue
+
+func GetDB() *simplebolt.Database {
+	var err error
+	if db == nil {
+		db, err = simplebolt.New(boltFile)
+		if err != nil {
+			log.Fatalf("Could not create database! %s", err)
+		}
+	}
+	return db
+}
+
+func GetConfig() *simplebolt.KeyValue {
+	var err error
+	if config == nil {
+		db := GetDB()
+		config, err = simplebolt.NewKeyValue(db, "config")
+		if err != nil {
+			log.Fatalf("Could not create database! %s", err)
+		}
+	}
+	return config
+}
+
+func Login(host string) {
+	var config = GetConfig()
+	name, _ := config.Get("email")
+	passwd, _ := config.Get("password")
+	if name == "" || passwd == "" {
+		log.Fatalf("Error: email or password is not config\n")
+	}
+
 	var data = url.Values{}
 	data.Set("username", name)
 	data.Set("password", passwd)
@@ -47,7 +81,8 @@ func Login(host, name, passwd string) {
 		fmt.Printf("%s\n", msg.Error)
 	} else {
 		fmt.Printf("%s\n", msg.Message)
-		ioutil.WriteFile(rcFile, []byte(res.Header.Get("Set-Cookie")), 0444)
+		cookie := res.Header.Get("Set-Cookie")
+		config.Set("cookie", cookie)
 	}
 }
 
@@ -58,7 +93,7 @@ func main() {
 	app.Version = "0.0.1"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "H",
+			Name:   "host, H",
 			Value:  "http://holehub.com",
 			Usage:  "The HoleHUB Host",
 			EnvVar: "HOLEHUB_HOST",
@@ -68,20 +103,37 @@ func main() {
 		{
 			Name:  "login",
 			Usage: "Login HoleHUB",
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "name",
-					Value: "",
-					Usage: "Username or email",
-				},
-				cli.StringFlag{
-					Name:  "password",
-					Value: "",
-					Usage: "Password",
-				},
-			},
 			Action: func(c *cli.Context) {
-				Login(c.GlobalString("H"), c.String("name"), c.String("password"))
+				Login(c.GlobalString("host"))
+			},
+		},
+		{
+			Name:        "config",
+			Usage:       "Config HoleHUB cli",
+			Description: "config set key value\n   config get key",
+			Action: func(c *cli.Context) {
+				var config = GetConfig()
+				var args = c.Args()
+				switch args.First() {
+				case "get":
+					if len(args) != 2 {
+						fmt.Printf("Not enough arguments.\n\n")
+						cli.ShowCommandHelp(c, "config")
+						os.Exit(1)
+					}
+					var value, _ = config.Get(args[1])
+					fmt.Printf("%s\n", value)
+					return
+				case "set":
+					if len(args) != 2 {
+						fmt.Printf("Not enough arguments.\n\n")
+						cli.ShowCommandHelp(c, "config")
+						os.Exit(1)
+					}
+					config.Set(args[1], args[2])
+				default:
+					cli.ShowCommandHelp(c, "config")
+				}
 			},
 		},
 	}
