@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/codegangsta/cli"
+	"github.com/levigross/grequests"
 	"github.com/xyproto/simplebolt"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 )
 
@@ -40,33 +37,33 @@ func Login(host string) {
 		log.Fatalf("Error: email or password is not config\n")
 	}
 
-	var data = url.Values{}
-	data.Set("username", name)
-	data.Set("password", passwd)
-	res, err := http.PostForm(host+"/api/signin/", data)
+	ro := &grequests.RequestOptions{
+		Data: map[string]string{"username": name, "password": passwd},
+	}
+
+	rsp, err := grequests.Post(host+"/api/signin/", ro)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer res.Body.Close()
+	defer rsp.Close()
 
-	b, _ := ioutil.ReadAll(res.Body)
-
-	if res.StatusCode != 200 {
-		fmt.Printf("%s\n", b)
-		return
+	if !rsp.Ok {
+		log.Fatalf("Error: %s\n", rsp.String())
 	}
 
 	var msg JE
-	err = json.Unmarshal(b, &msg)
+	err = rsp.JSON(&msg)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if msg.Code != "0" {
-		fmt.Printf("%s\n", msg.Error)
+		fmt.Printf("Error: %s\n", msg.Error)
+		os.Exit(1)
 	} else {
-		fmt.Printf("%s\n", msg.Message)
-		cookie := res.Header.Get("Set-Cookie")
+		fmt.Printf("Login HoleHUB %s\n", msg.Message)
+		cookie := rsp.Header.Get("Set-Cookie")
 		config.Set("cookie", cookie)
 	}
 }
