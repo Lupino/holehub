@@ -106,10 +106,12 @@ func Ping(host string) bool {
 }
 
 type HoleApp struct {
-	ID     string
-	Name   string
-	Port   string
-	Scheme string
+	ID      string
+	Name    string
+	Port    string
+	Scheme  string
+	Lscheme string
+	Lport   string
 }
 
 func (hole HoleApp) run(host, command string) {
@@ -201,25 +203,14 @@ func getCert(host, name, outName string) {
 	ioutil.WriteFile(outName, rsp.Bytes(), 0444)
 }
 
-func Run(host, scheme, name, port string) {
-	if !Ping(host) {
-		Login(host)
-	}
-
-	holeApp := createHoleApp(host, scheme, name)
-	holes.Set(holeApp.ID, "local-port", port)
-	holes.Set(holeApp.ID, "local-scheme", scheme)
-
-	holeApp.Start(host)
-	defer holeApp.Kill(host)
-
+func processHoleClient(host string, holeApp HoleApp) {
 	getCert(host, "cert.pem", certFile)
 	getCert(host, "cert.key", privFile)
 
-	var realAddr = scheme + "://127.0.0.1:" + port
+	var realAddr = holeApp.Lscheme + "://127.0.0.1:" + holeApp.Lport
 	var hostPort = strings.Split(host, "://")[1]
 	var parts = strings.Split(hostPort, ":")
-	var serverAddr = scheme + "://" + parts[0] + ":" + holeApp.Port
+	var serverAddr = holeApp.Scheme + "://" + parts[0] + ":" + holeApp.Port
 	var client = hole.NewClient(realAddr)
 	client.ConfigTLS(certFile, privFile)
 
@@ -236,10 +227,27 @@ func Run(host, scheme, name, port string) {
 	}
 
 	fmt.Printf("Publish: %s\n", serverAddr)
-	go client.Process()
+	client.Process()
+}
+
+func Run(host, scheme, name, port string) {
+	if !Ping(host) {
+		Login(host)
+	}
+
+	holeApp := createHoleApp(host, scheme, name)
+	holes.Set(holeApp.ID, "local-port", port)
+	holes.Set(holeApp.ID, "local-scheme", scheme)
+	holeApp.Lport = port
+	holeApp.Lscheme = scheme
+
+	holeApp.Start(host)
+	defer holeApp.Kill(host)
+	go processHoleClient(host, holeApp)
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, os.Kill)
 	<-s
+}
 }
 
 func main() {
