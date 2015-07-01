@@ -24,31 +24,16 @@ var boltFile = "/tmp/bolt.db"
 var db *simplebolt.Database
 var config *simplebolt.KeyValue
 
-func GetDB() *simplebolt.Database {
+func init() {
 	var err error
-	if db == nil {
-		db, err = simplebolt.New(boltFile)
-		if err != nil {
-			log.Fatalf("Could not create database! %s", err)
-		}
+	db, err = simplebolt.New(boltFile)
+	if err != nil {
+		log.Fatalf("Could not create database! %s", err)
 	}
-	return db
-}
-
-func GetConfig() *simplebolt.KeyValue {
-	var err error
-	if config == nil {
-		db := GetDB()
-		config, err = simplebolt.NewKeyValue(db, "config")
-		if err != nil {
-			log.Fatalf("Could not create database! %s", err)
-		}
-	}
-	return config
+	config, _ = simplebolt.NewKeyValue(db, "config")
 }
 
 func Login(host string) {
-	var config = GetConfig()
 	name, _ := config.Get("email")
 	passwd, _ := config.Get("password")
 	if name == "" || passwd == "" {
@@ -112,7 +97,6 @@ func main() {
 			Usage:       "Config HoleHUB cli",
 			Description: "config set key value\n   config get key",
 			Action: func(c *cli.Context) {
-				var config = GetConfig()
 				var args = c.Args()
 				switch args.First() {
 				case "get":
