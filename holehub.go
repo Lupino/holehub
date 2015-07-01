@@ -489,9 +489,7 @@ func main() {
 		holeName := req.Form.Get("name")
 
 		hs := usershole.NewHoleApp(username, holeName, scheme)
-		out := ErrorMessages[0]
-		out["ID"] = hs.ID
-		r.JSON(w, http.StatusOK, out)
+		r.JSON(w, http.StatusOK, map[string]HoleApp{"hole": *hs})
 	}).Methods("POST")
 
 	router.HandleFunc("/api/holes/{holeID}/start/", func(w http.ResponseWriter, req *http.Request) {
