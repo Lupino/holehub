@@ -37,6 +37,10 @@ var apps *simplebolt.Set
 var appNames *simplebolt.KeyValue
 
 func init() {
+	initDB()
+}
+
+func initDB() {
 	var err error
 	db, err = simplebolt.New(boltFile)
 	if err != nil {
@@ -183,9 +187,13 @@ func (hole HoleApp) run(host, command string) {
 func (hole HoleApp) Start(host string) {
 	hole.run(host, "start")
 	holes.Set(hole.ID, "status", "started")
+	holes.Set(hole.ID, "pid", strconv.Itoa(os.Getpid()))
 }
 
 func (hole HoleApp) Kill(host string) {
+	if db == nil {
+		initDB()
+	}
 	hole.run(host, "kill")
 	holes.Set(hole.ID, "status", "stoped")
 }
@@ -249,6 +257,8 @@ func getCert(host, name, outName string) {
 func processHoleClient(host string, holeApp HoleApp) {
 	getCert(host, "cert.pem", certFile)
 	getCert(host, "cert.key", privFile)
+	db.Close()
+	db = nil
 
 	var realAddr = holeApp.Lscheme + "://127.0.0.1:" + holeApp.Lport
 	var hostPort = strings.Split(host, "://")[1]
