@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -25,6 +24,8 @@ type JE struct {
 
 var defaultReTryTime = 1000
 var reTryTimes = defaultReTryTime
+
+var hubHost string
 
 var boltFile = os.Getenv("HOME") + "/.holehub.db"
 var certFile = "/tmp/cert.pem"
@@ -52,7 +53,7 @@ func initDB() {
 	appNames, _ = simplebolt.NewKeyValue(db, "appnames")
 }
 
-func Login(host string) {
+func Login() {
 	name, _ := config.Get("email")
 	passwd, _ := config.Get("password")
 	if name == "" || passwd == "" {
@@ -63,7 +64,7 @@ func Login(host string) {
 		Data: map[string]string{"username": name, "password": passwd},
 	}
 
-	rsp, err := grequests.Post(host+"/api/signin/", ro)
+	rsp, err := grequests.Post(hubHost+"/api/signin/", ro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,13 +91,13 @@ func Login(host string) {
 	}
 }
 
-func Ping(host string) bool {
+func Ping() bool {
 	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 	}
 
-	rsp, err := grequests.Get(host+"/api/ping/", ro)
+	rsp, err := grequests.Get(hubHost+"/api/ping/", ro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -117,8 +118,10 @@ type HoleApp struct {
 	ID      string
 	Name    string
 	Port    string
+	Host    string
 	Scheme  string
 	Lscheme string
+	Lhost   string
 	Lport   string
 	Status  string
 	Pid     int
@@ -133,7 +136,9 @@ func NewHoleApp(ID string) (holeApp HoleApp, err error) {
 	holeApp.Name, _ = holes.Get(ID, "name")
 	holeApp.Port, _ = holes.Get(ID, "port")
 	holeApp.Scheme, _ = holes.Get(ID, "scheme")
+	holeApp.Host, _ = holes.Get(ID, "host")
 	holeApp.Lport, _ = holes.Get(ID, "local-port")
+	holeApp.Lhost, _ = holes.Get(ID, "local-host")
 	holeApp.Lscheme, _ = holes.Get(ID, "local-scheme")
 	holeApp.Status, _ = holes.Get(ID, "status")
 
@@ -155,13 +160,13 @@ func NewHoleAppByName(name string) (holeApp HoleApp, err error) {
 	return
 }
 
-func (hole HoleApp) run(host, command string) {
+func (hole HoleApp) run(command string) {
 	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 	}
 
-	rsp, err := grequests.Post(host+"/api/holes/"+hole.ID+"/"+command+"/", ro)
+	rsp, err := grequests.Post(hubHost+"/api/holes/"+hole.ID+"/"+command+"/", ro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -184,38 +189,38 @@ func (hole HoleApp) run(host, command string) {
 	}
 }
 
-func (hole HoleApp) Start(host string) {
-	hole.run(host, "start")
+func (hole HoleApp) Start() {
+	hole.run("start")
 	holes.Set(hole.ID, "status", "started")
 	holes.Set(hole.ID, "pid", strconv.Itoa(os.Getpid()))
 }
 
-func (hole HoleApp) Kill(host string) {
+func (hole HoleApp) Kill() {
 	if db == nil {
 		initDB()
 	}
-	hole.run(host, "kill")
+	hole.run("kill")
 	holes.Set(hole.ID, "status", "stoped")
 }
 
-func (hole HoleApp) Remove(host string) {
+func (hole HoleApp) Remove() {
 	if db == nil {
 		initDB()
 	}
 	holes.Del(hole.ID)
 	apps.Del(hole.ID)
 	appNames.Del(hole.ID)
-	hole.run(host, "remove")
+	hole.run("remove")
 }
 
-func createHoleApp(host, scheme, name string) HoleApp {
+func createHoleApp(scheme, name string) HoleApp {
 	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 		Data:    map[string]string{"scheme": scheme, "name": name},
 	}
 
-	rsp, err := grequests.Post(host+"/api/holes/create/", ro)
+	rsp, err := grequests.Post(hubHost+"/api/holes/create/", ro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,6 +240,7 @@ func createHoleApp(host, scheme, name string) HoleApp {
 	hole := msg["hole"]
 	holes.Set(hole.ID, "name", hole.Name)
 	holes.Set(hole.ID, "scheme", hole.Scheme)
+	holes.Set(hole.ID, "host", hole.Host)
 	holes.Set(hole.ID, "port", hole.Port)
 	holes.Set(hole.ID, "status", "stoped")
 	apps.Add(hole.ID)
@@ -245,13 +251,13 @@ func createHoleApp(host, scheme, name string) HoleApp {
 	return hole
 }
 
-func getCert(host, name, outName string) {
+func getCert(name, outName string) {
 	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 	}
 
-	rsp, err := grequests.Get(host+"/api/"+name, ro)
+	rsp, err := grequests.Get(hubHost+"/api/"+name, ro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -266,16 +272,14 @@ func getCert(host, name, outName string) {
 	fp.Close()
 }
 
-func processHoleClient(host string, holeApp HoleApp) {
-	getCert(host, "cert.pem", certFile)
-	getCert(host, "cert.key", privFile)
+func processHoleClient(holeApp HoleApp) {
+	getCert("cert.pem", certFile)
+	getCert("cert.key", privFile)
 	db.Close()
 	db = nil
 
-	var realAddr = holeApp.Lscheme + "://127.0.0.1:" + holeApp.Lport
-	var hostPort = strings.Split(host, "://")[1]
-	var parts = strings.Split(hostPort, ":")
-	var serverAddr = holeApp.Scheme + "://" + parts[0] + ":" + holeApp.Port
+	var realAddr = holeApp.Lscheme + "://" + holeApp.Lhost + ":" + holeApp.Lport
+	var serverAddr = holeApp.Scheme + "://" + holeApp.Host + ":" + holeApp.Port
 	var client = hole.NewClient(realAddr)
 	client.ConfigTLS(certFile, privFile)
 
@@ -295,29 +299,29 @@ func processHoleClient(host string, holeApp HoleApp) {
 	client.Process()
 }
 
-func Run(host, scheme, name, port string) {
-	if !Ping(host) {
-		Login(host)
+func Run(name, scheme, lhost, lport string) {
+	if !Ping() {
+		Login()
 	}
 
-	holeApp := createHoleApp(host, scheme, name)
-	holes.Set(holeApp.ID, "local-port", port)
+	holeApp := createHoleApp(scheme, name)
+	holes.Set(holeApp.ID, "local-port", lport)
+	holes.Set(holeApp.ID, "local-host", lhost)
 	holes.Set(holeApp.ID, "local-scheme", scheme)
-	holeApp.Lport = port
+	holeApp.Lport = lport
+	holeApp.Lhost = lhost
 	holeApp.Lscheme = scheme
 
-	holeApp.Start(host)
-	defer holeApp.Kill(host)
-	go processHoleClient(host, holeApp)
+	holeApp.Start()
+	defer holeApp.Kill()
+	go processHoleClient(holeApp)
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, os.Kill)
 	<-s
 }
 
-func ListApp(host string) {
+func ListApp() {
 	holeIDs, _ := apps.GetAll()
-	var hostPort = strings.Split(host, "://")[1]
-	host = strings.Split(hostPort, ":")[0]
 	fmt.Println("ID\t\t\t\t\tName\t\tPort\t\t\t\t\tStatus")
 	for _, holeID := range holeIDs {
 		holeApp, err := NewHoleApp(holeID)
@@ -325,11 +329,11 @@ func ListApp(host string) {
 			continue
 		}
 		fmt.Printf("%s\t%s\t\t127.0.0.1:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
-			holeApp.Name, holeApp.Lport, holeApp.Lscheme, host, holeApp.Port, holeApp.Scheme, holeApp.Status)
+			holeApp.Name, holeApp.Lport, holeApp.Lscheme, hubHost, holeApp.Port, holeApp.Scheme, holeApp.Status)
 	}
 }
 
-func StartApp(host, nameOrID string) {
+func StartApp(nameOrID string) {
 	var holeApp HoleApp
 	var err error
 	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
@@ -341,9 +345,9 @@ func StartApp(host, nameOrID string) {
 		log.Fatalf("HoleApp: %s is already started.", nameOrID)
 	}
 
-	holeApp.Start(host)
-	defer holeApp.Kill(host)
-	go processHoleClient(host, holeApp)
+	holeApp.Start()
+	defer holeApp.Kill()
+	go processHoleClient(holeApp)
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, os.Kill)
 	<-s
@@ -364,7 +368,7 @@ func StopApp(nameOrID string) {
 	syscall.Kill(holeApp.Pid, syscall.SIGINT)
 }
 
-func RemoveApp(host, nameOrID string) {
+func RemoveApp(nameOrID string) {
 	var holeApp HoleApp
 	var err error
 	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
@@ -376,7 +380,7 @@ func RemoveApp(host, nameOrID string) {
 		syscall.Kill(holeApp.Pid, syscall.SIGINT)
 	}
 
-	holeApp.Remove(host)
+	holeApp.Remove()
 }
 
 func main() {
@@ -397,7 +401,8 @@ func main() {
 			Name:  "login",
 			Usage: "Login HoleHUB",
 			Action: func(c *cli.Context) {
-				Login(c.GlobalString("host"))
+				hubHost = c.GlobalString("host")
+				Login()
 			},
 		},
 		{
@@ -443,7 +448,12 @@ func main() {
 					Usage: "The app name.",
 				},
 				cli.StringFlag{
-					Name:  "port, p",
+					Name:  "local_host, lh",
+					Value: "127.0.0.1",
+					Usage: "The source server host.",
+				},
+				cli.StringFlag{
+					Name:  "local_port, lp",
 					Value: "8080",
 					Usage: "The source server port.",
 				},
@@ -451,15 +461,18 @@ func main() {
 			Action: func(c *cli.Context) {
 				var scheme = c.String("scheme")
 				var name = c.String("name")
-				var port = c.String("port")
-				Run(c.GlobalString("host"), scheme, name, port)
+				var port = c.String("local_port")
+				var host = c.String("local_host")
+				hubHost = c.GlobalString("host")
+				Run(name, scheme, host, port)
 			},
 		},
 		{
 			Name:  "ls",
 			Usage: "List HoleApps",
 			Action: func(c *cli.Context) {
-				ListApp(c.GlobalString("host"))
+				hubHost = c.GlobalString("host")
+				ListApp()
 			},
 		},
 		{
@@ -472,7 +485,8 @@ func main() {
 					cli.ShowCommandHelp(c, "start")
 					os.Exit(1)
 				}
-				StartApp(c.GlobalString("host"), c.Args().First())
+				hubHost = c.GlobalString("host")
+				StartApp(c.Args().First())
 			},
 		},
 		{
@@ -498,7 +512,8 @@ func main() {
 					cli.ShowCommandHelp(c, "start")
 					os.Exit(1)
 				}
-				RemoveApp(c.GlobalString("host"), c.Args().First())
+				hubHost = c.GlobalString("host")
+				RemoveApp(c.Args().First())
 			},
 		},
 	}
