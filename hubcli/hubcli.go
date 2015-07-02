@@ -328,8 +328,8 @@ func ListApp() {
 		if err != nil {
 			continue
 		}
-		fmt.Printf("%s\t%s\t\t127.0.0.1:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
-			holeApp.Name, holeApp.Lport, holeApp.Lscheme, hubHost, holeApp.Port, holeApp.Scheme, holeApp.Status)
+		fmt.Printf("%s\t%s\t\t%s:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
+			holeApp.Name, holeApp.Lhost, holeApp.Lport, holeApp.Lscheme, hubHost, holeApp.Port, holeApp.Scheme, holeApp.Status)
 	}
 }
 
