@@ -32,6 +32,7 @@ var db *simplebolt.Database
 var config *simplebolt.KeyValue
 var holes *simplebolt.HashMap
 var apps *simplebolt.Set
+var appNames *simplebolt.KeyValue
 
 func init() {
 	var err error
@@ -42,6 +43,7 @@ func init() {
 	config, _ = simplebolt.NewKeyValue(db, "config")
 	holes, _ = simplebolt.NewHashMap(db, "holes")
 	apps, _ = simplebolt.NewSet(db, "apps")
+	appNames, _ = simplebolt.NewKeyValue(db, "appnames")
 }
 
 func Login(host string) {
@@ -115,8 +117,12 @@ type HoleApp struct {
 	Status  string
 }
 
-func NewHoleApp(ID string) HoleApp {
-	var holeApp = HoleApp{ID: ID}
+func NewHoleApp(ID string) (holeApp HoleApp, err error) {
+	if ok, _ := apps.Has(ID); !ok {
+		err = fmt.Errorf("hole app: not exists.")
+		return
+	}
+	holeApp = HoleApp{ID: ID}
 	holeApp.Name, _ = holes.Get(ID, "name")
 	holeApp.Port, _ = holes.Get(ID, "port")
 	holeApp.Scheme, _ = holes.Get(ID, "scheme")
@@ -124,7 +130,17 @@ func NewHoleApp(ID string) HoleApp {
 	holeApp.Lscheme, _ = holes.Get(ID, "local-scheme")
 	holeApp.Status, _ = holes.Get(ID, "status")
 
-	return holeApp
+	return holeApp, nil
+}
+
+func NewHoleAppByName(name string) (holeApp HoleApp, err error) {
+	holeID, _ := appNames.Get(name)
+	if holeID == "" {
+		err = fmt.Errorf("hole app: not exists.")
+		return
+	}
+	holeApp, err = NewHoleApp(holeID)
+	return
 }
 
 func (hole HoleApp) run(host, command string) {
@@ -196,6 +212,9 @@ func createHoleApp(host, scheme, name string) HoleApp {
 	holes.Set(hole.ID, "port", hole.Port)
 	holes.Set(hole.ID, "status", "stoped")
 	apps.Add(hole.ID)
+	if hole.Name != "" {
+		appNames.Set(hole.Name, hole.ID)
+	}
 
 	return hole
 }
@@ -271,10 +290,33 @@ func ListApp(host string) {
 	host = strings.Split(hostPort, ":")[0]
 	fmt.Println("ID\t\t\t\t\tName\t\tPort\t\t\t\t\tStatus")
 	for _, holeID := range holeIDs {
-		holeApp := NewHoleApp(holeID)
+		holeApp, err := NewHoleApp(holeID)
+		if err != nil {
+			continue
+		}
 		fmt.Printf("%s\t%s\t\t127.0.0.1:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
 			holeApp.Name, holeApp.Lport, holeApp.Lscheme, host, holeApp.Port, holeApp.Scheme, holeApp.Status)
 	}
+}
+
+func StartApp(host, nameOrID string) {
+	var holeApp HoleApp
+	var err error
+	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
+		if holeApp, err = NewHoleApp(nameOrID); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if holeApp.Status == "started" {
+		log.Fatalf("HoleApp: %s is already started.", nameOrID)
+	}
+
+	holeApp.Start(host)
+	defer holeApp.Kill(host)
+	go processHoleClient(host, holeApp)
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt, os.Kill)
+	<-s
 }
 
 func main() {
@@ -358,6 +400,19 @@ func main() {
 			Usage: "List HoleApps",
 			Action: func(c *cli.Context) {
 				ListApp(c.GlobalString("host"))
+			},
+		},
+		{
+			Name:        "start",
+			Usage:       "Start a HoleApp",
+			Description: "start name\n   start ID",
+			Action: func(c *cli.Context) {
+				if len(c.Args()) == 0 {
+					fmt.Printf("Not enough arguments.\n\n")
+					cli.ShowCommandHelp(c, "start")
+					os.Exit(1)
+				}
+				StartApp(c.GlobalString("host"), c.Args().First())
 			},
 		},
 	}
