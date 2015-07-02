@@ -26,6 +26,7 @@ var defaultReTryTime = 1000
 var reTryTimes = defaultReTryTime
 
 var hubHost string
+var cookie string
 
 var boltFile = os.Getenv("HOME") + "/.holehub.db"
 var certFile = "/tmp/cert.pem"
@@ -51,6 +52,7 @@ func initDB() {
 	holes, _ = simplebolt.NewHashMap(db, "holes")
 	apps, _ = simplebolt.NewSet(db, "apps")
 	appNames, _ = simplebolt.NewKeyValue(db, "appnames")
+	cookie, _ = config.Get("cookie")
 }
 
 func Login() {
@@ -86,13 +88,12 @@ func Login() {
 		os.Exit(1)
 	} else {
 		fmt.Printf("Login HoleHUB %s\n", msg.Message)
-		cookie := rsp.Header.Get("Set-Cookie")
+		cookie = rsp.Header.Get("Set-Cookie")
 		config.Set("cookie", cookie)
 	}
 }
 
 func Ping() bool {
-	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 	}
@@ -161,7 +162,6 @@ func NewHoleAppByName(name string) (holeApp HoleApp, err error) {
 }
 
 func (hole HoleApp) run(command string) {
-	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 	}
@@ -214,7 +214,6 @@ func (hole HoleApp) Remove() {
 }
 
 func createHoleApp(scheme, name string) HoleApp {
-	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 		Data:    map[string]string{"scheme": scheme, "name": name},
@@ -252,7 +251,6 @@ func createHoleApp(scheme, name string) HoleApp {
 }
 
 func getCert(name, outName string) {
-	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 	}
@@ -275,8 +273,6 @@ func getCert(name, outName string) {
 func processHoleClient(holeApp HoleApp) {
 	getCert("cert.pem", certFile)
 	getCert("cert.key", privFile)
-	db.Close()
-	db = nil
 
 	var realAddr = holeApp.Lscheme + "://" + holeApp.Lhost + ":" + holeApp.Lport
 	var serverAddr = holeApp.Scheme + "://" + holeApp.Host + ":" + holeApp.Port
@@ -314,6 +310,10 @@ func Run(name, scheme, lhost, lport string) {
 
 	holeApp.Start()
 	defer holeApp.Kill()
+
+	db.Close()
+	db = nil
+
 	go processHoleClient(holeApp)
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, os.Kill)
