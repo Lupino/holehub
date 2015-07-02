@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/levigross/grequests"
 	"github.com/xyproto/simplebolt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -251,7 +251,9 @@ func getCert(host, name, outName string) {
 		log.Fatalf("Error: %s\n", rsp.String())
 	}
 
-	ioutil.WriteFile(outName, rsp.Bytes(), 0444)
+	fp, _ := os.Create(outName)
+	io.Copy(fp, rsp)
+	fp.Close()
 }
 
 func processHoleClient(host string, holeApp HoleApp) {
