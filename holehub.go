@@ -38,16 +38,17 @@ var port int
 var sg *sendgrid.SGClient
 
 var ErrorMessages = map[int]map[string]string{
-	0: e.New(0, "", "Success").Render(),
-	1: e.New(1, "User is already exists.", "Please try a new one.").Render(),
-	2: e.New(2, "Email is already exists.", "Please try a new one or reset the password.").Render(),
-	3: e.New(3, "Email format error", "Please type a valid email.").Render(),
-	4: e.New(4, "User name or password invalid.", "").Render(),
-	5: e.New(5, "User is confimd or ConfirmationCode is expired.", "Resend a new confirmation code?").Render(),
-	6: e.New(6, "User is confimd.", "No need resend twice.").Render(),
-	7: e.New(7, "User NotFound.", "").Render(),
-	8: e.New(8, "Old password is not correct.", "").Render(),
-	9: e.New(9, "PasswordToken is expired.", "").Render(),
+	0:  e.New(0, "", "Success").Render(),
+	1:  e.New(1, "User is already exists.", "Please try a new one.").Render(),
+	2:  e.New(2, "Email is already exists.", "Please try a new one or reset the password.").Render(),
+	3:  e.New(3, "Email format error", "Please type a valid email.").Render(),
+	4:  e.New(4, "User name or password invalid.", "").Render(),
+	5:  e.New(5, "User is confimd or ConfirmationCode is expired.", "Resend a new confirmation code?").Render(),
+	6:  e.New(6, "User is confimd.", "No need resend twice.").Render(),
+	7:  e.New(7, "User NotFound.", "").Render(),
+	8:  e.New(8, "Old password is not correct.", "").Render(),
+	9:  e.New(9, "PasswordToken is expired.", "").Render(),
+	10: e.New(10, "HoleApp is not exists.", "").Render(),
 }
 
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
@@ -510,6 +511,10 @@ func main() {
 		holeID := mux.Vars(req)["holeID"]
 		username := userstate.Username(req)
 		hs := usershole.GetOne(username, holeID)
+		if hs == nil {
+			r.JSON(w, http.StatusNotFound, ErrorMessages[10])
+			return
+		}
 		hs.Start()
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
@@ -518,6 +523,10 @@ func main() {
 		holeID := mux.Vars(req)["holeID"]
 		username := userstate.Username(req)
 		hs := usershole.GetOne(username, holeID)
+		if hs == nil {
+			r.JSON(w, http.StatusNotFound, ErrorMessages[10])
+			return
+		}
 		hs.Kill()
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
@@ -525,7 +534,10 @@ func main() {
 	router.HandleFunc("/api/holes/{holeID}/remove/", func(w http.ResponseWriter, req *http.Request) {
 		holeID := mux.Vars(req)["holeID"]
 		username := userstate.Username(req)
-		usershole.Remove(username, holeID)
+		if err := usershole.Remove(username, holeID); err != nil {
+			r.JSON(w, http.StatusNotFound, ErrorMessages[10])
+			return
+		}
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
@@ -533,6 +545,10 @@ func main() {
 		holeID := mux.Vars(req)["holeID"]
 		username := userstate.Username(req)
 		hs := usershole.GetOne(username, holeID)
+		if hs == nil {
+			r.JSON(w, http.StatusNotFound, ErrorMessages[10])
+			return
+		}
 		r.JSON(w, http.StatusOK, hs)
 	}).Methods("GET")
 
