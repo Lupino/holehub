@@ -346,6 +346,20 @@ func (h *UsersHole) GetAll(username string) []*HoleApp {
 	return servers
 }
 
+func (h *UsersHole) Remove(username, holeID string) error {
+	hs := h.GetOne(username, holeID)
+	if hs == nil {
+		return fmt.Errorf("HoleApp is not exists")
+	}
+	hs.Kill()
+	delete(h.servers, holeID)
+	h.holes.Del(holeID)
+	users := h.state.Users()
+	userholes, _ := users.Get(username, "holes")
+	users.Set(username, "holes", strings.Replace(userholes, holeID+",", "", 1))
+	return nil
+}
+
 func (h *UsersHole) GetOne(username, holeID string) *HoleApp {
 	if !h.state.HasUser(username) {
 		return nil
@@ -505,6 +519,13 @@ func main() {
 		username := userstate.Username(req)
 		hs := usershole.GetOne(username, holeID)
 		hs.Kill()
+		r.JSON(w, http.StatusOK, ErrorMessages[0])
+	}).Methods("POST")
+
+	router.HandleFunc("/api/holes/{holeID}/remove/", func(w http.ResponseWriter, req *http.Request) {
+		holeID := mux.Vars(req)["holeID"]
+		username := userstate.Username(req)
+		usershole.Remove(username, holeID)
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
 	}).Methods("POST")
 
