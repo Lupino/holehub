@@ -10,7 +10,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -115,6 +117,7 @@ type HoleApp struct {
 	Lscheme string
 	Lport   string
 	Status  string
+	Pid     int
 }
 
 func NewHoleApp(ID string) (holeApp HoleApp, err error) {
@@ -129,6 +132,11 @@ func NewHoleApp(ID string) (holeApp HoleApp, err error) {
 	holeApp.Lport, _ = holes.Get(ID, "local-port")
 	holeApp.Lscheme, _ = holes.Get(ID, "local-scheme")
 	holeApp.Status, _ = holes.Get(ID, "status")
+
+	if holeApp.Status == "started" {
+		Pid, _ := holes.Get(ID, "pid")
+		holeApp.Pid, _ = strconv.Atoi(Pid)
+	}
 
 	return holeApp, nil
 }
@@ -319,6 +327,21 @@ func StartApp(host, nameOrID string) {
 	<-s
 }
 
+func StopApp(nameOrID string) {
+	var holeApp HoleApp
+	var err error
+	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
+		if holeApp, err = NewHoleApp(nameOrID); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if holeApp.Status == "stoped" {
+		log.Fatalf("HoleApp: %s is already stoped.", nameOrID)
+	}
+
+	syscall.Kill(holeApp.Pid, syscall.SIGINT)
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "hubcli"
@@ -413,6 +436,19 @@ func main() {
 					os.Exit(1)
 				}
 				StartApp(c.GlobalString("host"), c.Args().First())
+			},
+		},
+		{
+			Name:        "stop",
+			Usage:       "Stop a started HoleApp",
+			Description: "stop name\n   stop ID",
+			Action: func(c *cli.Context) {
+				if len(c.Args()) == 0 {
+					fmt.Printf("Not enough arguments.\n\n")
+					cli.ShowCommandHelp(c, "stop")
+					os.Exit(1)
+				}
+				StopApp(c.Args().First())
 			},
 		},
 	}
