@@ -31,6 +31,7 @@ import (
 )
 
 var minPort int
+var holeHost string
 var host string
 var configPath string
 var tplFile = "config.tpl"
@@ -233,6 +234,7 @@ type HoleApp struct {
 	ID      string
 	Name    string
 	Scheme  string
+	Host    string
 	Port    string
 	Ca      string `json:"-"`
 	Cakey   string `json:"-"`
@@ -244,6 +246,7 @@ func NewHoleApp(ID, name, scheme, port, ca, cakey string) *HoleApp {
 		ID:     ID,
 		Name:   name,
 		Scheme: scheme,
+		Host:   holeHost,
 		Port:   port,
 		Ca:     ca,
 		Cakey:  cakey,
@@ -396,8 +399,9 @@ func (h *UsersHole) GetLastPort() int {
 func init() {
 	flag.StringVar(&host, "host", "127.0.0.1", "The server host.")
 	flag.IntVar(&port, "port", 3000, "The server port.")
+	flag.StringVar(&holeHost, "hole_host", "127.0.0.1", "The holed host.")
 	flag.StringVar(&configPath, "config_dir", "config/", "The config path.")
-	flag.IntVar(&minPort, "min_port", 10000, "The min hole server port.")
+	flag.IntVar(&minPort, "min_port", 10000, "The min holed port.")
 	var sgUser = flag.String("sendgrid_user", "", "The SendGrid username.")
 	var sgKey = flag.String("sendgrid_key", "", "The SendGrid password.")
 	flag.Parse()

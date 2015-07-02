@@ -3,7 +3,7 @@
   "standardEnv": true,
   "binary": "lanch_holed",
   "args": [
-    "--addr", "{{.Scheme}}://:{{.Port}}",
+    "--addr", "{{.Scheme}}://{{.Host}}:{{.Port}}",
     "--ca", "certs/{{.Ca}}",
     "--key", "certs/{{.Cakey}}",
     "--use-tls"
