@@ -198,6 +198,16 @@ func (hole HoleApp) Kill(host string) {
 	holes.Set(hole.ID, "status", "stoped")
 }
 
+func (hole HoleApp) Remove(host string) {
+	if db == nil {
+		initDB()
+	}
+	holes.Del(hole.ID)
+	apps.Del(hole.ID)
+	appNames.Del(hole.ID)
+	hole.run(host, "remove")
+}
+
 func createHoleApp(host, scheme, name string) HoleApp {
 	cookie, _ := config.Get("cookie")
 	var ro = &grequests.RequestOptions{
@@ -354,6 +364,21 @@ func StopApp(nameOrID string) {
 	syscall.Kill(holeApp.Pid, syscall.SIGINT)
 }
 
+func RemoveApp(host, nameOrID string) {
+	var holeApp HoleApp
+	var err error
+	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
+		if holeApp, err = NewHoleApp(nameOrID); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if holeApp.Status == "started" {
+		syscall.Kill(holeApp.Pid, syscall.SIGINT)
+	}
+
+	holeApp.Remove(host)
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "hubcli"
@@ -461,6 +486,19 @@ func main() {
 					os.Exit(1)
 				}
 				StopApp(c.Args().First())
+			},
+		},
+		{
+			Name:        "rm",
+			Usage:       "remove a HoleApp",
+			Description: "rm name\n   rm ID",
+			Action: func(c *cli.Context) {
+				if len(c.Args()) == 0 {
+					fmt.Printf("Not enough arguments.\n\n")
+					cli.ShowCommandHelp(c, "start")
+					os.Exit(1)
+				}
+				RemoveApp(c.GlobalString("host"), c.Args().First())
 			},
 		},
 	}
