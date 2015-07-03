@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/Lupino/hole"
 	"github.com/codegangsta/cli"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -59,7 +61,13 @@ func Login() {
 	name, _ := config.Get("email")
 	passwd, _ := config.Get("password")
 	if name == "" || passwd == "" {
-		log.Fatalf("Error: email or password is not config\n")
+		rdr := bufio.NewReader(os.Stdin)
+		username := ReadLine(rdr, "Username: ")
+		config.Set("username", username)
+		name := ReadLine(rdr, "Email: ")
+		config.Set("email", name)
+		passwd := ReadLine(rdr, "Password: ")
+		config.Set("password", passwd)
 	}
 
 	ro := &grequests.RequestOptions{
@@ -85,6 +93,9 @@ func Login() {
 
 	if msg.Code != "0" {
 		fmt.Printf("Error: %s\n", msg.Error)
+		config.Del("password")
+		config.Del("email")
+		config.Del("username")
 		os.Exit(1)
 	} else {
 		fmt.Printf("Login HoleHUB %s\n", msg.Message)
@@ -392,6 +403,16 @@ func RemoveApp(nameOrID string) {
 	}
 
 	holeApp.Remove()
+}
+
+func ReadLine(rdr *bufio.Reader, prompt string) string {
+	var text string
+	for len(text) == 0 {
+		fmt.Print(prompt)
+		text, _ = rdr.ReadString('\n')
+		text = strings.TrimRight(text, "\n")
+	}
+	return text
 }
 
 func main() {
