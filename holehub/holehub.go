@@ -295,7 +295,7 @@ func processHoleClient(holeApp HoleApp) {
 	client.Process()
 }
 
-func Run(name, scheme, lhost, lport string) {
+func Run(name, scheme, lhost, lport string, rm bool) {
 	if !Ping() {
 		Login()
 	}
@@ -310,6 +310,9 @@ func Run(name, scheme, lhost, lport string) {
 
 	holeApp.Start()
 	defer holeApp.Kill()
+	if rm {
+		defer holeApp.Remove()
+	}
 
 	db.Close()
 	db = nil
@@ -457,14 +460,19 @@ func main() {
 					Value: "8080",
 					Usage: "The source server port.",
 				},
+				cli.BoolFlag{
+					Name:  "rm",
+					Usage: "Auto Remove the app.",
+				},
 			},
 			Action: func(c *cli.Context) {
 				var scheme = c.String("scheme")
 				var name = c.String("name")
 				var port = c.String("local_port")
 				var host = c.String("local_host")
+				var rm = c.Bool("rm")
 				hubHost = c.GlobalString("host")
-				Run(name, scheme, host, port)
+				Run(name, scheme, host, port, rm)
 			},
 		},
 		{
