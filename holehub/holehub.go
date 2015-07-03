@@ -354,6 +354,41 @@ func ListApp() {
 	}
 }
 
+func ListServerApp() {
+	if !Ping() {
+		Login()
+	}
+
+	var ro = &grequests.RequestOptions{
+		Headers: map[string]string{"Cookie": cookie},
+	}
+
+	rsp, err := grequests.Get(hubHost+"/api/holes/", ro)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rsp.Close()
+
+	if !rsp.Ok {
+		log.Fatalf("Error: %s\n", rsp.String())
+	}
+
+	var holeApps map[string][]HoleApp
+
+	err = rsp.JSON(&holeApps)
+
+	fmt.Println("ID\t\t\t\t\tName\t\tPort\t\t\t\t\tStatus")
+	var holeApp, rh HoleApp
+	for _, rh = range holeApps["holes"] {
+		holeApp, err = NewHoleApp(rh.ID)
+		if err != nil {
+			holeApp = rh
+		}
+		fmt.Printf("%s\t%s\t\t%s:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
+			holeApp.Name, holeApp.Lhost, holeApp.Lport, holeApp.Lscheme, hubHost, holeApp.Port, holeApp.Scheme, holeApp.Status)
+	}
+}
+
 func StartApp(nameOrID string, restart bool) {
 	var holeApp HoleApp
 	var err error
@@ -512,9 +547,20 @@ func main() {
 		{
 			Name:  "ls",
 			Usage: "List HoleApps",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "all, a",
+					Usage: "list All the hole apps.",
+				},
+			},
 			Action: func(c *cli.Context) {
 				hubHost = c.GlobalString("host")
-				ListApp()
+				if c.Bool("all") {
+					ListServerApp()
+
+				} else {
+					ListApp()
+				}
 			},
 		},
 		{
