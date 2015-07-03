@@ -278,7 +278,7 @@ func getCert(name, outName string) {
 	fp.Close()
 }
 
-func processHoleClient(holeApp HoleApp) {
+func processHoleClient(holeApp HoleApp, restart bool) {
 	getCert("cert.pem", certFile)
 	getCert("cert.key", privFile)
 
@@ -289,7 +289,12 @@ func processHoleClient(holeApp HoleApp) {
 
 	for {
 		if err := client.Connect(serverAddr); err == nil {
-			break
+			fmt.Printf("Publish: %s\n", serverAddr)
+			client.Process()
+			if !restart {
+				syscall.Kill(os.Getpid(), syscall.SIGINT)
+			}
+			reTryTimes = defaultReTryTime
 		}
 		reTryTimes = reTryTimes - 1
 		if reTryTimes == 0 {
@@ -299,11 +304,9 @@ func processHoleClient(holeApp HoleApp) {
 		time.Sleep(2 * time.Second)
 	}
 
-	fmt.Printf("Publish: %s\n", serverAddr)
-	client.Process()
 }
 
-func Run(name, scheme, lhost, lport string, rm bool) {
+func Run(name, scheme, lhost, lport string, rm, restart bool) {
 	if !Ping() {
 		Login()
 	}
@@ -322,7 +325,7 @@ func Run(name, scheme, lhost, lport string, rm bool) {
 		defer holeApp.Remove()
 	}
 
-	go processHoleClient(holeApp)
+	go processHoleClient(holeApp, restart)
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, os.Kill)
 	<-s
@@ -341,7 +344,7 @@ func ListApp() {
 	}
 }
 
-func StartApp(nameOrID string) {
+func StartApp(nameOrID string, restart bool) {
 	var holeApp HoleApp
 	var err error
 	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
@@ -355,7 +358,7 @@ func StartApp(nameOrID string) {
 
 	holeApp.Start()
 	defer holeApp.Kill()
-	go processHoleClient(holeApp)
+	go processHoleClient(holeApp, restart)
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, os.Kill)
 	<-s
@@ -469,6 +472,10 @@ func main() {
 					Name:  "rm",
 					Usage: "Auto Remove the app.",
 				},
+				cli.BoolFlag{
+					Name:  "restart",
+					Usage: "Auto restart the crash.",
+				},
 			},
 			Action: func(c *cli.Context) {
 				var scheme = c.String("scheme")
@@ -476,8 +483,9 @@ func main() {
 				var port = c.String("local_port")
 				var host = c.String("local_host")
 				var rm = c.Bool("rm")
+				var restart = c.Bool("restart")
 				hubHost = c.GlobalString("host")
-				Run(name, scheme, host, port, rm)
+				Run(name, scheme, host, port, rm, restart)
 			},
 		},
 		{
@@ -492,6 +500,12 @@ func main() {
 			Name:        "start",
 			Usage:       "Start a HoleApp",
 			Description: "start name\n   start ID",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "restart",
+					Usage: "Auto restart the crash.",
+				},
+			},
 			Action: func(c *cli.Context) {
 				if len(c.Args()) == 0 {
 					fmt.Printf("Not enough arguments.\n\n")
@@ -499,7 +513,8 @@ func main() {
 					os.Exit(1)
 				}
 				hubHost = c.GlobalString("host")
-				StartApp(c.Args().First())
+				var restart = c.Bool("restart")
+				StartApp(c.Args().First(), restart)
 			},
 		},
 		{
