@@ -214,7 +214,7 @@ func (hole HoleApp) Remove() {
 	}
 	holes.Del(hole.ID)
 	apps.Del(hole.ID)
-	appNames.Del(hole.ID)
+	appNames.Del(hole.Name)
 	hole.run("remove")
 }
 
