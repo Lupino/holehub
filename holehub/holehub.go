@@ -195,6 +195,9 @@ func (hole HoleApp) Start() {
 	hole.run("start")
 	holes.Set(hole.ID, "status", "started")
 	holes.Set(hole.ID, "pid", strconv.Itoa(os.Getpid()))
+
+	db.Close()
+	db = nil
 }
 
 func (hole HoleApp) Kill() {
@@ -315,9 +318,6 @@ func Run(name, scheme, lhost, lport string, rm bool) {
 	if rm {
 		defer holeApp.Remove()
 	}
-
-	db.Close()
-	db = nil
 
 	go processHoleClient(holeApp)
 	s := make(chan os.Signal, 1)
