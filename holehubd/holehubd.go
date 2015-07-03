@@ -528,8 +528,7 @@ func main() {
 		username := userstate.Username(req)
 		hs := usershole.GetOne(username, holeID)
 		if hs == nil {
-			r.JSON(w, http.StatusNotFound, ErrorMessages[10])
-			return
+			hs = &HoleApp{ID: holeID}
 		}
 		hs.Kill()
 		r.JSON(w, http.StatusOK, ErrorMessages[0])
