@@ -385,7 +385,7 @@ func RemoveApp(nameOrID string) {
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "hubcli"
+	app.Name = "holehub"
 	app.Usage = "HoleHUB command line."
 	app.Version = "0.0.1"
 	app.Flags = []cli.Flag{
