@@ -157,7 +157,9 @@ func NewHoleAppByName(name string) (holeApp HoleApp, err error) {
 		err = fmt.Errorf("hole app: not exists.")
 		return
 	}
-	holeApp, err = NewHoleApp(holeID)
+	if holeApp, err = NewHoleApp(holeID); err != nil {
+		appNames.Del(name)
+	}
 	return
 }
 
