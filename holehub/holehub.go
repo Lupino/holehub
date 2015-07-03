@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -61,7 +60,7 @@ func Login() {
 	name, _ := config.Get("email")
 	passwd, _ := config.Get("password")
 	if name == "" || passwd == "" {
-		rdr := bufio.NewReader(os.Stdin)
+		rdr := bufio.NewScanner(os.Stdin)
 		username := ReadLine(rdr, "Username: ")
 		config.Set("username", username)
 		name := ReadLine(rdr, "Email: ")
@@ -405,12 +404,13 @@ func RemoveApp(nameOrID string) {
 	holeApp.Remove()
 }
 
-func ReadLine(rdr *bufio.Reader, prompt string) string {
+func ReadLine(rdr *bufio.Scanner, prompt string) string {
 	var text string
 	for len(text) == 0 {
 		fmt.Print(prompt)
-		text, _ = rdr.ReadString('\n')
-		text = strings.TrimRight(text, "\n")
+		if rdr.Scan() {
+			text = rdr.Text()
+		}
 	}
 	return text
 }
