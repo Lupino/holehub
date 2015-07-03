@@ -219,6 +219,9 @@ func (hole HoleApp) Remove() {
 }
 
 func createHoleApp(scheme, name string) HoleApp {
+	if has, _ := appNames.Get(name); has != "" {
+		log.Fatalf("App Name: %s is already exists. bind on %s\n", name, has)
+	}
 	var ro = &grequests.RequestOptions{
 		Headers: map[string]string{"Cookie": cookie},
 		Data:    map[string]string{"scheme": scheme, "name": name},
