@@ -12,8 +12,9 @@
     <link rel="stylesheet" href="/assets/material.min.css">
     <link rel="stylesheet" href="/assets/styles.css">
   </head>
-  <body class="mdl-demo mdl-color--grey-100 mdl-color-text--grey-700 mdl-base">
-    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+  <body>
+    <!-- Always shows a header, even in smaller screens. -->
+    <div class="layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
       <header class="mdl-layout__header mdl-layout__header--scroll mdl-color--primary">
         <div class="mdl-layout--large-screen-only mdl-layout__header-row">
         </div>
@@ -22,34 +23,30 @@
         </div>
         <div class="mdl-layout--large-screen-only mdl-layout__header-row">
         </div>
-        <div class="mdl-layout--large-screen-only mdl-layout__tab-bar mdl-js-ripple-effect mdl-color--primary-dark">
-          <a href="#overview" class="mdl-layout__tab is-active">Overview</a>
-          <a href="#download" class="mdl-layout__tab">Download</a>
-          <a href="#docs" class="mdl-layout__tab">Docs</a>
-          <a href="#overview" class="mdl-layout__tab">Details</a>
-          <a href="#overview" class="mdl-layout__tab">Technology</a>
-          <a href="#features" class="mdl-layout__tab">FAQ</a>
-          <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored mdl-shadow--4dp mdl-color--accent" id="add">
-            <i class="material-icons">+</i>
-          </button>
+        <div class="navigation-container mdl-layout--large-screen-only mdl-layout__header-row">
+          <!-- Navigation. We hide it in small screens. -->
+          <nav class="mdl-navigation mdl-layout--large-screen-only mdl-js-ripple-effect mdl-color--primary-dark">
+            <a class="mdl-navigation__link is-active" href="/">Overview</a>
+            <a class="mdl-navigation__link" href="/download/index.html">Download</a>
+            <a class="mdl-navigation__link" href="/docs/index.html">Docs</a>
+            <a class="mdl-navigation__link" href="/faq/index.html">FAQ</a>
+          </nav>
         </div>
       </header>
       <div class="mdl-layout__drawer">
         <span class="mdl-layout-title">HoleHUB</span>
         <nav class="mdl-navigation">
-          <a href="#overview" class="mdl-navigation__link">Overview</a>
-          <a href="#download" class="mdl-navigation__link">Download</a>
-          <a href="#docs" class="mdl-navigation__link">Docs</a>
-          <a href="#overview" class="mdl-navigation__link">Details</a>
-          <a href="#overview" class="mdl-navigation__link">Technology</a>
-          <a href="#features" class="mdl-navigation__link">FAQ</a>
+          <a class="mdl-navigation__link" href="/">Overview</a>
+          <a class="mdl-navigation__link" href="/download/index.html">Download</a>
+          <a class="mdl-navigation__link" href="/docs/index.html">Docs</a>
+          <a class="mdl-navigation__link" href="/faq/index.html">FAQ</a>
         </nav>
       </div>
       <main class="mdl-layout__content">
-        <div class="mdl-layout__tab-panel is-active" id="overview">
+        <div class="page-content"><!-- Your content goes here -->
           <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
             <header class="section__play-btn mdl-cell mdl-cell--3-col-desktop mdl-cell--2-col-tablet mdl-cell--4-col-phone mdl-color--teal-100 mdl-color-text--white">
-              <i class="material-icons">HoleHUB</i>
+              <i class="material-icons">play_circle_filled</i>
             </header>
             <div class="mdl-card mdl-cell mdl-cell--9-col-desktop mdl-cell--6-col-tablet mdl-cell--4-col-phone">
               <div class="mdl-card__supporting-text">
