@@ -350,7 +350,7 @@ func ListApp() {
 			continue
 		}
 		fmt.Printf("%s\t%s\t\t%s:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
-			holeApp.Name, holeApp.Lhost, holeApp.Lport, holeApp.Lscheme, hubHost, holeApp.Port, holeApp.Scheme, holeApp.Status)
+			holeApp.Name, holeApp.Lhost, holeApp.Lport, holeApp.Lscheme, holeApp.Host, holeApp.Port, holeApp.Scheme, holeApp.Status)
 	}
 }
 
@@ -385,7 +385,7 @@ func ListServerApp() {
 			holeApp = rh
 		}
 		fmt.Printf("%s\t%s\t\t%s:%s/%s->%s:%s/%s\t%s\n", holeApp.ID,
-			holeApp.Name, holeApp.Lhost, holeApp.Lport, holeApp.Lscheme, hubHost, holeApp.Port, holeApp.Scheme, holeApp.Status)
+			holeApp.Name, holeApp.Lhost, holeApp.Lport, holeApp.Lscheme, holeApp.Host, holeApp.Port, holeApp.Scheme, holeApp.Status)
 	}
 }
 
