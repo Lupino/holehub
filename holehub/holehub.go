@@ -409,7 +409,7 @@ func StartApp(nameOrID string, restart bool) {
 	<-s
 }
 
-func StopApp(nameOrID string) {
+func StopApp(nameOrID string, kill bool) {
 	var holeApp HoleApp
 	var err error
 	if holeApp, err = NewHoleAppByName(nameOrID); err != nil {
@@ -419,6 +419,10 @@ func StopApp(nameOrID string) {
 	}
 	if holeApp.Status == "stoped" {
 		log.Fatalf("HoleApp: %s is already stoped.", nameOrID)
+	}
+
+	if kill {
+		holeApp.Kill()
 	}
 
 	syscall.Kill(holeApp.Pid, syscall.SIGINT)
@@ -594,7 +598,21 @@ func main() {
 					cli.ShowCommandHelp(c, "stop")
 					os.Exit(1)
 				}
-				StopApp(c.Args().First())
+				StopApp(c.Args().First(), false)
+			},
+		},
+		{
+			Name:        "kill",
+			Usage:       "kill a started HoleApp",
+			Description: "kill name\n   kill ID",
+			Action: func(c *cli.Context) {
+				if len(c.Args()) == 0 {
+					fmt.Printf("Not enough arguments.\n\n")
+					cli.ShowCommandHelp(c, "stop")
+					os.Exit(1)
+				}
+				hubHost = c.GlobalString("host")
+				StopApp(c.Args().First(), true)
 			},
 		},
 		{
