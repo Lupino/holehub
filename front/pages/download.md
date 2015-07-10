@@ -26,7 +26,7 @@ include_prefix: ../
       </code>
 
       <h5>Setup 3: Run it!</h5>
-      <p> Read the <a href="#docs"> Usage Guide</a> for documentation on how to use holehub. Try it out running it from the command line:</p>
+      <p> Read the <a href="/docs/index.html"> Usage Guide</a> for documentation on how to use holehub. Try it out running it from the command line:</p>
       <code>
         $ ./holehub --help
       </code>
