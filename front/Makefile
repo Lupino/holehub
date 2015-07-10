@@ -21,7 +21,7 @@ build: $(GOPATH)/src/$(PKG)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BIN)/$(GOOS)-$(GOARCH)/holehub $(PKG)
 
 zip:
-	find -name "holehub"  | while read F;do zip -D -j $$F $$F;done
+	find -name "holehub"  | while read F;do zip -D -j $$F $$F; rm $$F; done
 
 clean:
 	rm -rf $(BIN)
