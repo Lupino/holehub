@@ -253,6 +253,14 @@ code {
   padding-bottom: 53px;
 }
 
+.signup .mdl-textfield, .signin .mdl-textfield {
+  display: block;
+}
+
+.signup button, .signin button {
+  margin: 5px -3px;
+}
+
 @media screen and (max-width: 850px) {
   .layout .mdl-layout__drawer-button {
     display: block;
