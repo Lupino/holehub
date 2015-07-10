@@ -227,6 +227,10 @@ code {
   position: relative;
 }
 
+.overview .mdl-navigation__link.overview::after,
+.download .mdl-navigation__link.download::after,
+.docs .mdl-navigation__link.docs::after,
+.faq .mdl-navigation__link.faq::after,
 .layout .navigation-container .mdl-navigation .mdl-navigation__link.is-active::after {
   width: 100%;
   display: block;
