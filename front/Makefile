@@ -1,5 +1,5 @@
 BIN=assets/download
-SRC=github.com/Lupino/holehub/holehub
+PKG=github.com/Lupino/holehub/holehub
 
 all: build-all zip
 
@@ -10,12 +10,15 @@ build-all:
 	GOOS=darwin GOARCH=amd64 make build
 	# GOOS=windows GOARCH=amd64 make build
 
+$(GOPATH)/src/$(PKG):
+	go get -v $(PKG)
 
-build:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BIN)/$(GOOS)-$(GOARCH)/holehub $(SRC)
+
+build: $(GOPATH)/src/$(PKG)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BIN)/$(GOOS)-$(GOARCH)/holehub $(PKG)
 
 zip:
 	find -name "holehub"  | while read F;do zip -D -j $$F $$F;done
 
 clean:
-	rm -r download
+	rm -r $(BIN)
