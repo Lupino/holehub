@@ -24,4 +24,14 @@ zip:
 	find -name "holehub"  | while read F;do zip -D -j $$F $$F;done
 
 clean:
-	rm -r $(BIN)
+	rm -rf $(BIN)
+	gulp clean
+
+prepare:
+	npm install
+
+dist:
+	gulp
+
+serve:
+	gulp serve
