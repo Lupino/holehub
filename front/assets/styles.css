@@ -250,6 +250,7 @@ code {
   padding: 8px;
   padding-top: 48px;
   background-color: #F5F5F5;
+  padding-bottom: 53px;
 }
 
 @media screen and (max-width: 850px) {
