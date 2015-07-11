@@ -11,8 +11,14 @@ include_prefix: ./
   <div class="mdl-card mdl-cell mdl-cell--9-col-desktop mdl-cell--6-col-tablet mdl-cell--4-col-phone">
     <div class="mdl-card__supporting-text">
       <h4>Secure tunnels to localhost</h4>
-      <b></b>
-      "I want to expose a local server behind a NAT or firewall to the internet."
+      <p>"I want to expose a local server behind a NAT or firewall to the internet."</p>
+      <!-- Colored raised button -->
+      <a href="/signin/index.html" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
+        Signin
+      </a> &nbsp; Or &nbsp;
+      <a href="/signup/index.html" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
+        Signup
+      </a>
     </div>
   </div>
 </section>

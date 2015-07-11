@@ -28,6 +28,11 @@ include_prefix: ../
       <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
         Signup
       </button>
+      &nbsp;
+      &nbsp;
+      <a href="/signin/index.html">
+      I'm an old user?
+      </a>
     </div>
   </div>
 </section>

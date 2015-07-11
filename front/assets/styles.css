@@ -253,11 +253,11 @@ code {
   padding-bottom: 53px;
 }
 
-.signup .mdl-textfield, .signin .mdl-textfield {
+.signup .mdl-textfield, .signin .mdl-textfield, .reset_password .mdl-textfield {
   display: block;
 }
 
-.signup button, .signin button {
+.signup button, .signin button, .forget_password button, .reset_password button {
   margin: 5px -3px;
 }
 
