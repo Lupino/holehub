@@ -17,6 +17,23 @@ function signin(nameOrEmail, password, callback) {
   });
 }
 
+function signup(name, email, password, callback) {
+  request.post(HUB_HOST + '/api/signup/', {
+    username: name,
+    email: email,
+    password: password
+  }, function(err, res) {
+    if (err) {
+      return alert('Error: ' + err);
+    }
+    var rsp = res.body;
+    if (rsp.error) {
+      return alert('Error: ' + rsp.error);
+    }
+    window.location.href = '/confirm_email/index.html';
+  });
+}
+
 var elem = {};
 
 elem.signin = function(e) {
@@ -26,6 +43,16 @@ elem.signin = function(e) {
   var password = elemPassword.value.trim();
   console.log(nameOrEmail, password);
   signin(nameOrEmail, password);
+};
+
+elem.signup = function(e) {
+  var elemUsername = document.getElementById('username');
+  var elemPassword = document.getElementById('password');
+  var elemEmail = document.getElementById('email');
+  var userName = elemUsername.value.trim();
+  var password = elemPassword.value.trim();
+  var email = elemEmail.value.trim();
+  signup(userName, email, password);
 };
 
 window['elem'] = elem;

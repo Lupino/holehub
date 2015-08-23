@@ -8,7 +8,7 @@ include_prefix: ../
   <div class="mdl-card mdl-cell mdl-cell--12-col">
     <div class="mdl-card__supporting-text">
       <h4>Confirmation email</h4>
-        <p>We are send a confirmation email for you.</p>
+        <p>Signup Success. We are send a confirmation email for you. Please go to you email to active you account.</p>
     </div>
   </div>
 </section>
