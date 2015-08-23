@@ -61,7 +61,7 @@ type NewUserForm struct {
 	Password string `json:"password"`
 }
 
-func (uf *NewUserForm) FieldMap() binding.FieldMap {
+func (uf *NewUserForm) FieldMap(_ *http.Request) binding.FieldMap {
 	return binding.FieldMap{
 		&uf.Name: binding.Field{
 			Form:     "username",
@@ -83,7 +83,7 @@ type AuthForm struct {
 	Password    string `json:"password"`
 }
 
-func (af *AuthForm) FieldMap() binding.FieldMap {
+func (af *AuthForm) FieldMap(_ *http.Request) binding.FieldMap {
 	return binding.FieldMap{
 		&af.NameOrEmail: binding.Field{
 			Form:     "username",
@@ -102,7 +102,7 @@ type ResetPasswordForm struct {
 	NewPassword string `json:"new_password"`
 }
 
-func (rpf *ResetPasswordForm) FieldMap() binding.FieldMap {
+func (rpf *ResetPasswordForm) FieldMap(_ *http.Request) binding.FieldMap {
 	return binding.FieldMap{
 		&rpf.Token: binding.Field{
 			Form:     "token",
