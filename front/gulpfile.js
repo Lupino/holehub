@@ -37,9 +37,16 @@ gulp.task('metadata', function () {
 
 // Build Production Files, the Default Task
 gulp.task('default', ['clean'], function (cb) {
-  runSequence(['assets', 'pages'],cb);
+  runSequence(['scripts', 'assets', 'pages'],cb);
 });
 
+// Build app.js
+gulp.task('scripts', function() {
+  gulp.src('src/app.js', {read: false})
+    .pipe($.browserify({insertGlobals: true}))
+    .pipe($.rename('app.js'))
+    .pipe(gulp.dest('./assets'));
+});
 
 // ***** Landing page tasks ***** //
 
@@ -124,6 +131,7 @@ gulp.task('serve:browsersync', ['default'], function () {
 
   gulp.watch(['templates/**/*', "pages/**/*"], ['pages', reload]);
   gulp.watch(['assets/**/*'], ['assets', reload]);
+  gulp.watch(['src/**/*'], ['scripts', reload]);
 });
 
 gulp.task('serve', ['default'], function() {
@@ -135,6 +143,7 @@ gulp.task('serve', ['default'], function() {
 
   gulp.watch(['templates/**/*', "pages/**/*"], ['pages']);
   gulp.watch(['assets/**/*'], ['assets']);
+  gulp.watch(['src/**/*'], ['scripts']);
 
   gulp.src('./dist/index.html')
     .pipe($.open('', {url: 'http://localhost:5000'}));
