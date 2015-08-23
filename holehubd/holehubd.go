@@ -56,9 +56,9 @@ var ErrorMessages = map[int]map[string]string{
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
 
 type NewUserForm struct {
-	Name     string
-	Email    string
-	Password string
+	Name     string `json"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (uf *NewUserForm) FieldMap() binding.FieldMap {
@@ -79,8 +79,8 @@ func (uf *NewUserForm) FieldMap() binding.FieldMap {
 }
 
 type AuthForm struct {
-	NameOrEmail string
-	Password    string
+	NameOrEmail string `json:"username"`
+	Password    string `json:"password"`
 }
 
 func (af *AuthForm) FieldMap() binding.FieldMap {
@@ -97,9 +97,9 @@ func (af *AuthForm) FieldMap() binding.FieldMap {
 }
 
 type ResetPasswordForm struct {
-	Token       string
-	OldPassword string
-	NewPassword string
+	Token       string `json:"token"`
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }
 
 func (rpf *ResetPasswordForm) FieldMap() binding.FieldMap {
