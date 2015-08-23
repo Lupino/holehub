@@ -10,7 +10,7 @@ function signin(nameOrEmail, password, callback) {
       return alert('Error: ' + err);
     }
     var rsp = res.body;
-    if (rsp.code !== 0) {
+    if (rsp.error) {
       return alert('Error: ' + rsp.error);
     }
     window.location.href = '/signin_success/index.html';
