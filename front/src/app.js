@@ -13,8 +13,8 @@ function signin(nameOrEmail, password, callback) {
     if (rsp.code !== 0) {
       return alert('Error: ' + rsp.error);
     }
-    alert('Login Success.')
-  }).type('form');
+    window.location.href = '/signin_success/index.html';
+  });
 }
 
 var elem = {};
