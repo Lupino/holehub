@@ -11,6 +11,27 @@
     <link href="{{page.include_prefix}}assets/fonts/icons.css" rel="stylesheet">
     <link rel="stylesheet" href="{{page.include_prefix}}assets/material.min.css">
     <link rel="stylesheet" href="{{page.include_prefix}}assets/styles.css">
+    <script>
+      (function() {
+        var elem = window['elem'] || {};
+
+        elem.checkToken = function() {
+          var m = window.location.search.match(/token=([^&]+)/);
+          if (!m) {
+            var html = [];
+            html.push('<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">');
+            html.push('<input class="mdl-textfield__input" type="password" id="password" pattern=".{5}.*"/>');
+            html.push('<label class="mdl-textfield__label" for="password">Current password:</label>');
+            html.push('<span class="mdl-textfield__error">Password require more than 5 letters.</span>');
+            html.push('</div>');
+            document.write(html.join(''));
+          } else {
+            elem.token = m[1];
+          }
+        };
+        window['elem'] = elem;
+      })();
+    </script>
   </head>
   <body class="{{page.bodyclass}}">
     <!-- Always shows a header, even in smaller screens. -->

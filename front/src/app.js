@@ -49,8 +49,28 @@ function sendResetEmail(name) {
   });
 }
 
+function resetPassword(password, newPassword, token) {
+  request.post(HUB_HOST + '/api/reset_password/', {
+    old_password: password,
+    new_password: newPassword,
+    token: token,
+  }, function(err, res) {
+    if (err) {
+      return alert('Error: ' + err);
+    }
+    var rsp = res.body;
+    if (rsp.code === '9') {
+    window.location.href = '/reset_password_token_expired/index.html';
+      return;
+    }
+    if (rsp.error) {
+      return alert('Error: ' + rsp.error);
+    }
+    window.location.href = '/rest_password_success/index.html';
+  });
+}
 
-var elem = {};
+var elem = window['elem'] || {};
 
 elem.signin = function(e) {
   var elemNameOrEmaiil = document.getElementById('nameOrEmail');
@@ -75,6 +95,18 @@ elem.sendResetEmail = function(e) {
   var elemUsername = document.getElementById('username');
   var username = elemUsername.value.trim();
   sendResetEmail(username);
+};
+
+elem.resetPassword = function(e) {
+  var elemPassword = document.getElementById('password');
+  var elemNewPassword = document.getElementById('new-password');
+  var password;
+  if (elemPassword) {
+    password = elemPassword.value.trim();
+  }
+  var newPassword = elemNewPassword.value.trim();
+  var token = elem.token;
+  resetPassword(password, newPassword, token);
 };
 
 window['elem'] = elem;
