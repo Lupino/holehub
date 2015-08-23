@@ -1,14 +1,21 @@
 ---
-layout: layout
+layout: docs
 bodyclass: docs
 include_prefix: ../
 ---
-<!-- TODO: Try to separate markup and content -->
-<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
-  <div class="mdl-card mdl-cell mdl-cell--12-col">
-    <div class="mdl-card__supporting-text">
-      <h4>Document</h4>
-      work in progresss.
-    </div>
-  </div>
-</section>
+
+# User Guide
+
+This is the user guide of holehub command line
+
+## Getting start
+
+    go -v github.com/Lupino/holehub/holehub
+
+### First login holehub.com
+
+    holehub login
+
+### Run an app
+
+    holehub run -n app
