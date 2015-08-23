@@ -34,6 +34,22 @@ function signup(name, email, password, callback) {
   });
 }
 
+function sendResetEmail(name) {
+  request.post(HUB_HOST + '/api/send/passwordToken', {
+    username: name,
+  }, function(err, res) {
+    if (err) {
+      return alert('Error: ' + err);
+    }
+    var rsp = res.body;
+    if (rsp.error) {
+      return alert('Error: ' + rsp.error);
+    }
+    window.location.href = '/reset_email/index.html';
+  });
+}
+
+
 var elem = {};
 
 elem.signin = function(e) {
@@ -53,6 +69,12 @@ elem.signup = function(e) {
   var password = elemPassword.value.trim();
   var email = elemEmail.value.trim();
   signup(userName, email, password);
+};
+
+elem.sendResetEmail = function(e) {
+  var elemUsername = document.getElementById('username');
+  var username = elemUsername.value.trim();
+  sendResetEmail(username);
 };
 
 window['elem'] = elem;

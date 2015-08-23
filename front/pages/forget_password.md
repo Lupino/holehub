@@ -12,7 +12,7 @@ include_prefix: ../
         <input class="mdl-textfield__input" type="text" id="username" />
         <label class="mdl-textfield__label" for="username">Username:</label>
       </div>
-      <button class="mdl-button mdl-js-button mdl-button--primary">
+      <button class="mdl-button mdl-js-button mdl-button--primary" onclick="elem.sendResetEmail(this);">
         Send
       </button>
       &nbsp;
