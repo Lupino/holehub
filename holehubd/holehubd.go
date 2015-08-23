@@ -56,7 +56,7 @@ var ErrorMessages = map[int]map[string]string{
 var reEmail, _ = regexp.Compile("(\\w[-._\\w]*\\w@\\w[-._\\w]*\\w\\.\\w{2,3})")
 
 type NewUserForm struct {
-	Name     string `json"username"`
+	Name     string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
