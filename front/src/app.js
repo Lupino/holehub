@@ -1,7 +1,7 @@
 var request = require('superagent');
 var HUB_HOST = 'http://127.0.0.1:3000';
 
-function signin(nameOrEmail, password, callback) {
+function signin(nameOrEmail, password) {
   request.post(HUB_HOST + '/api/signin/', {
     username: nameOrEmail,
     password: password
@@ -17,7 +17,7 @@ function signin(nameOrEmail, password, callback) {
   });
 }
 
-function signup(name, email, password, callback) {
+function signup(name, email, password) {
   request.post(HUB_HOST + '/api/signup/', {
     username: name,
     email: email,
