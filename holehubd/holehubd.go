@@ -18,6 +18,7 @@ import (
 	"github.com/unrolled/render"
 	permissions "github.com/xyproto/permissionbolt"
 	"github.com/xyproto/pinterface"
+	"github.com/zimmski/negroni-cors"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -711,6 +712,7 @@ func main() {
 	n := negroni.Classic()
 
 	n.Use(perm)
+	n.Use(cors.NewAllow(&cors.Options{AllowAllOrigins: true}))
 	n.UseHandler(router)
 
 	//n.Run(":3000")
