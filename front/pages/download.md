@@ -12,12 +12,15 @@ include_prefix: ../
       <h5>Step 1: Download holehub</h5>
       <ul>
           <li><a href="/assets/download/darwin-amd64/holehub.zip">Mac OS X</a></li>
+          <li><a href="/assets/download/darwin-386/holehub.zip">Mac OS X/i386</a></li>
           <li><a href="/assets/download/linux-amd64/holehub.zip">Linux</a></li>
           <li><a href="/assets/download/linux-arm/holehub.zip">Linux/Arm</a></li>
           <li><a href="/assets/download/linux-386/holehub.zip">Linux/i386</a></li>
+          <li><a href="/assets/download/windows-arm/holehub.zip">Windows</a></li>
+          <li><a href="/assets/download/windows-386/holehub.zip">Windows/i386</a></li>
       </ul>
       <h5>Setup 2: Unzip it</h5>
-      <p>On linux or OSX you can unzip holehub from a terminal with the following command. </p>
+      <p>On linux or OSX you can unzip holehub from a terminal with the following command. On windows, just double click holehub.zip </p>
       <code>
       $ unzip path/to/holehub.zip
       </code>
