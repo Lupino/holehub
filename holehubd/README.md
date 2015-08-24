@@ -11,7 +11,7 @@ Build
 Run holehubd
 ------------
 
-    holehubd --config_dir=/path/to/config --hole_host=holehub.com --host=holehub.com --port=3000 --min_port=10000 --sendgrid_key=your_sendgrid_key --sendgrid_user=your_-sendgrid_user
+    holehubd --config_dir=/path/to/config --hole_host=holehub.com --host=holehub.com --port=3000 --min_port=10000 --sendgrid_key=your_sendgrid_key --sendgrid_user=your_sendgrid_user
 
 Run holed process manager
 -------------------------
