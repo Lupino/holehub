@@ -84,7 +84,7 @@ include_prefix: ./
           <li><a href="/download/index.html">More platforms</a></li>
       </ul>
       <h5>Setup 2: Unzip it</h5>
-      <p>On linux or OSX you can unzip holehub from a terminal with the following command. On windows, just double click holehub.zip </p>
+      <p>On linux or OSX you can unzip holehub from a terminal with the following command. </p>
       <code>
       $ unzip path/to/holehub.zip
       </code>
