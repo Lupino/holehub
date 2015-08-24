@@ -5,13 +5,10 @@ all: build-all zip
 
 
 build-all:
-	GOOS=linux GOARCH=386 make build
 	GOOS=linux GOARCH=amd64 make build
 	GOOS=linux GOARCH=arm make build
 	GOOS=darwin GOARCH=386 make build
 	GOOS=darwin GOARCH=amd64 make build
-	# GOOS=windows GOARCH=386 make build
-	# GOOS=windows GOARCH=amd64 make build
 
 $(GOPATH)/src/$(PKG):
 	go get -v $(PKG)
