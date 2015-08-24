@@ -675,6 +675,9 @@ func main() {
 	router.HandleFunc("/api/send/passwordToken", func(w http.ResponseWriter, req *http.Request) {
 		req.ParseForm()
 		username := req.Form.Get("username")
+		if isEmail(username) {
+			username, _ = emails.Get(username)
+		}
 		if !userstate.HasUser(username) {
 			r.JSON(w, http.StatusOK, ErrorMessages[7])
 			return
