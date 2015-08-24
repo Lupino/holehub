@@ -3,8 +3,8 @@ HoleHUBD
 
 The backend server of holehub.com.
 
-Build
------
+Install
+-------
 
     go get -v github.com/Lupino/holehub/holehubd
 
