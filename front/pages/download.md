@@ -16,7 +16,7 @@ include_prefix: ../
           <li><a href="/assets/download/linux-amd64/holehub.zip">Linux</a></li>
           <li><a href="/assets/download/linux-arm/holehub.zip">Linux/Arm</a></li>
           <li><a href="/assets/download/linux-386/holehub.zip">Linux/i386</a></li>
-          <li><a href="/assets/download/windows-arm/holehub.zip">Windows</a></li>
+          <li><a href="/assets/download/windows-amd64/holehub.zip">Windows</a></li>
           <li><a href="/assets/download/windows-386/holehub.zip">Windows/i386</a></li>
       </ul>
       <h5>Setup 2: Unzip it</h5>

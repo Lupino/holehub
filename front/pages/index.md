@@ -81,6 +81,7 @@ include_prefix: ./
           <li><a href="/assets/download/darwin-amd64/holehub.zip">Mac OS X</a></li>
           <li><a href="/assets/download/linux-amd64/holehub.zip">Linux</a></li>
           <li><a href="/assets/download/linux-arm/holehub.zip">Linux/Arm</a></li>
+          <li><a href="/assets/download/windows-amd64/holehub.zip">Windows</a></li>
           <li><a href="/download/index.html">More platforms</a></li>
       </ul>
       <h5>Setup 2: Unzip it</h5>
