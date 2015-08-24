@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 )
 
@@ -302,7 +301,7 @@ func processHoleClient(holeApp HoleApp, restart bool) {
 			fmt.Printf("Publish: %s\n", serverAddr)
 			client.Process()
 			if !restart {
-				syscall.Kill(os.Getpid(), syscall.SIGINT)
+				killApp(os.Getpid())
 			}
 			reTryTimes = defaultReTryTime
 		}
@@ -425,7 +424,7 @@ func StopApp(nameOrID string, kill bool) {
 		holeApp.Kill()
 	}
 
-	syscall.Kill(holeApp.Pid, syscall.SIGINT)
+	killApp(holeApp.Pid)
 }
 
 func RemoveApp(nameOrID string) {
@@ -437,7 +436,7 @@ func RemoveApp(nameOrID string) {
 		}
 	}
 	if holeApp.Status == "started" {
-		syscall.Kill(holeApp.Pid, syscall.SIGINT)
+		killApp(holeApp.Pid)
 	}
 
 	holeApp.Remove()
